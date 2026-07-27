@@ -1,4 +1,4 @@
-package site.yesaido.auth_server.service;
+package site.yesaido.user_server.service;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
