@@ -37,7 +37,7 @@ jobs:
           DB_USERNAME: test
           DB_PASSWORD: test1234
           Auth_DB_SCHEMA: public
-          JWT_SECRET: test-jwt-secret-for-ci-only
+          JWT_SECRET: test-jwt-secret-for-ci-only-please-ignore
           JWT_ACCESSTOKEN_EXPIRATION_MS: 100000
           JWT_REFRESHTOKEN_EXPIRATION_MS: 200000000
         run: ./mvnw -B clean verify
