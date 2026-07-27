@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>site.yesaido</groupId>
-    <artifactId>auth_server</artifactId>
+    <artifactId>user_server</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>auth_server</name>
-    <description>auth_server</description>
+    <description>user_server</description>
     <url/>
     <licenses>
         <license/>

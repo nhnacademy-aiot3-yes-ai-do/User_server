@@ -15,17 +15,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import site.yesaido.auth_server.domain.user.dto.signup.UserSignResponse;
-import site.yesaido.auth_server.domain.user.dto.signup.UserSignUpRequest;
-import site.yesaido.auth_server.domain.user.entity.Role;
-import site.yesaido.auth_server.domain.user.entity.User;
-import site.yesaido.auth_server.domain.user.entity.UserStatus;
-import site.yesaido.auth_server.domain.user.exception.AlreadyWithdrawnException;
-import site.yesaido.auth_server.domain.user.exception.EmailDuplicationException;
-import site.yesaido.auth_server.domain.user.exception.NicknameDuplicationException;
-import site.yesaido.auth_server.domain.user.exception.UserNotFoundException;
-import site.yesaido.auth_server.domain.user.repository.UserRepository;
-import site.yesaido.auth_server.domain.user.service.UserService;
+import site.yesaido.user_server.domain.user.dto.signup.UserSignResponse;
+import site.yesaido.user_server.domain.user.dto.signup.UserSignUpRequest;
+import site.yesaido.user_server.domain.user.entity.Role;
+import site.yesaido.user_server.domain.user.entity.User;
+import site.yesaido.user_server.domain.user.entity.UserStatus;
+import site.yesaido.user_server.domain.user.exception.AlreadyWithdrawnException;
+import site.yesaido.user_server.domain.user.exception.EmailDuplicationException;
+import site.yesaido.user_server.domain.user.exception.NicknameDuplicationException;
+import site.yesaido.user_server.domain.user.exception.UserNotFoundException;
+import site.yesaido.user_server.domain.user.repository.UserRepository;
+import site.yesaido.user_server.domain.user.service.UserService;
 
 import java.util.Optional;
 
