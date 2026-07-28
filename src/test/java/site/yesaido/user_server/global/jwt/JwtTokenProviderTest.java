@@ -1,0 +1,71 @@
+package site.yesaido.user_server.global.jwt;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
+import site.yesaido.user_server.domain.user.entity.Role;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class JwtTokenProviderTest {
+
+    private JwtTokenProvider jwtTokenProvider;
+    private final String secretKey = "3qQ2N6snwhv/zGlxiTm/BmUWigj9LBdjePt5sdkB53c=";
+
+    @BeforeEach
+    void setUp(){
+        jwtTokenProvider = new JwtTokenProvider();
+        ReflectionTestUtils.setField(jwtTokenProvider, "secretKey", secretKey);
+        ReflectionTestUtils.setField(jwtTokenProvider,"accessTokenExpireTime", 1800000L);
+        ReflectionTestUtils.setField(jwtTokenProvider, "refreshTokenExpireTime", 1209600000L);
+        jwtTokenProvider.init();
+    }
+
+    @Test
+    @DisplayName("성공 : accessToken 발급 성공")
+    void createAccessToken_success(){
+        Long userId = 1L;
+        String email = "nhn123@naver.com";
+        Role role = Role.USER;
+
+        String accessToken = jwtTokenProvider.createAccessToken(userId, email, role);
+
+        assertThat(accessToken).isNotNull();
+        assertThat(jwtTokenProvider.validateToken(accessToken)).isEqualTo(true);
+
+    }
+
+    @Test
+    @DisplayName("성공 : Refresh Token이 정상 생성된다")
+    void createRefreshToken_success(){
+        Long userId = 1L;
+
+        String refreshToken = jwtTokenProvider.createRefreshToken(userId);
+
+        assertThat(refreshToken).isNotNull();
+        assertThat(jwtTokenProvider.validateToken(refreshToken)).isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("성공 : 생성된 토큰에서 userId를 추출한다")
+    void getUserIdFromToken_success(){
+        Long userId = 4L;
+        String accessToken = jwtTokenProvider.createAccessToken(userId, "nhn123@naver.com", Role.USER);
+
+        Long extractUserId = jwtTokenProvider.getUserIdFromToken(accessToken);
+
+        assertThat(extractUserId).isEqualTo(4L);
+    }
+
+    @Test
+    @DisplayName("실패 : 조작되거나 잘못된 토큰 검증 시 false를 반환한다")
+    void validateToken_invalidToken(){
+        String invalidToken = "yesaido-nhn-super-team";
+        boolean token = jwtTokenProvider.validateToken(invalidToken);
+
+        assertThat(token).isFalse();
+    }
+
+
+}

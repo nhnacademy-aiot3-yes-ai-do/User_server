@@ -1,6 +1,13 @@
 spring:
+  application:
+    name: user-server
   config:
     import: optional:file:.env[.properties]
+
+  cloud:
+    kubernetes:
+      discovery:
+        enabled: ${K8S_DISCOVERY_ENABLED:false}
 
   datasource:
     url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?currentSchema=${Auth_DB_SCHEMA}&stringtype=unspecified
@@ -20,3 +27,11 @@ spring:
     secret: ${JWT_SECRET}
     access-token-expiration-ms: ${JWT_ACCESSTOKEN_EXPIRATION_MS:1000000}
     refresh-token-expiration-ms: ${JWT_REFRESHTOKEN_EXPIRATION_MS:1209600000}
+
+eureka:
+  client:
+    enabled: ${EUREKA_ENABLED:false}
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
