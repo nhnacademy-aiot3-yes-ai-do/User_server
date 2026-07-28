@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import site.yesaido.user_server.domain.user.dto.search.UserSearchResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignUpRequest;
 import site.yesaido.user_server.domain.user.entity.User;
@@ -13,6 +15,9 @@ import site.yesaido.user_server.domain.user.exception.EmailDuplicationException;
 import site.yesaido.user_server.domain.user.exception.NicknameDuplicationException;
 import site.yesaido.user_server.domain.user.exception.UserNotFoundException;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
+
+import java.util.Collections;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -83,7 +88,15 @@ public class UserService {
         return userRepository.existsByNickName(nickName);
     }
 
+    // 재배 멤버 초대용: 닉네임 부분일치 또는 이메일 완전일치로 활성 사용자 검색
+    public List<UserSearchResponse> searchUsers(String keyword){
+        if(!StringUtils.hasText(keyword)){
+            return Collections.emptyList();
+        }
 
-
+        return userRepository.searchActiveUsers(keyword.trim(), UserStatus.DELETED).stream()
+                .map(UserSearchResponse::from)
+                .toList();
+    }
 
 }
