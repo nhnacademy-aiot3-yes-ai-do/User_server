@@ -40,11 +40,6 @@ jobs:
           JWT_SECRET: test-jwt-secret-for-ci-only-please-ignore
           JWT_ACCESSTOKEN_EXPIRATION_MS: 100000
           JWT_REFRESHTOKEN_EXPIRATION_MS: 200000000
-        run: |
-          echo "DB_HOST=[$DB_HOST]"
-          echo "DB_PORT=[$DB_PORT]"
-          echo "DB_NAME=[$DB_NAME]"
-          echo "Auth_DB_SCHEMA=[$Auth_DB_SCHEMA]"
-          ./mvnw -B clean verify
+        run: ./mvnw -B clean verify
       - name: Docker 이미지 빌드 테스트 (push는 안 함)
         run: docker build -t user-server:pr-test .
