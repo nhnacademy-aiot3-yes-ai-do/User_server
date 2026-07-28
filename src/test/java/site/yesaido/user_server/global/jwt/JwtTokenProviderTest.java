@@ -8,7 +8,7 @@ import site.yesaido.user_server.domain.user.entity.Role;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class JwtTokenProviderTest {
+ class JwtTokenProviderTest {
 
     private JwtTokenProvider jwtTokenProvider;
     private final String secretKey = "3qQ2N6snwhv/zGlxiTm/BmUWigj9LBdjePt5sdkB53c=";
@@ -32,7 +32,7 @@ public class JwtTokenProviderTest {
         String accessToken = jwtTokenProvider.createAccessToken(userId, email, role);
 
         assertThat(accessToken).isNotNull();
-        assertThat(jwtTokenProvider.validateToken(accessToken)).isEqualTo(true);
+        assertThat(jwtTokenProvider.validateToken(accessToken)).isTrue();
 
     }
 
@@ -44,7 +44,7 @@ public class JwtTokenProviderTest {
         String refreshToken = jwtTokenProvider.createRefreshToken(userId);
 
         assertThat(refreshToken).isNotNull();
-        assertThat(jwtTokenProvider.validateToken(refreshToken)).isEqualTo(true);
+        assertThat(jwtTokenProvider.validateToken(refreshToken)).isTrue();
     }
 
     @Test
