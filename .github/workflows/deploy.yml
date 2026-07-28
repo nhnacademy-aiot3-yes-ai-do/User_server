@@ -42,6 +42,8 @@ jobs:
           distribution: temurin
           cache: maven
 
+      - uses: ./.github/actions/setup-test-env
+
       - name: Run tests
         run: ./mvnw -B clean test
 
@@ -63,7 +65,7 @@ jobs:
         env:
           SONAR_API_TOKEN: ${{ secrets.SONAR_API_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          SONAR_PROJECT_KEY: yes-nhn_user-service
+          SONAR_ANALYSIS_OUTCOME: ${{ steps.sonar.outcome }}
         run: bash .github/scripts/sonar.sh
 
   build-and-push:
