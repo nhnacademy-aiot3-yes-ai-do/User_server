@@ -28,7 +28,7 @@ jq -n \
   --arg build_result "$BUILD_RESULT" \
   --arg workflow_url "$SOURCE_WORKFLOW_URL" \
   --argjson simulate_failure "$SIMULATE_FAILURE" \
-  -f "$SCRIPT_DIR/dispatch-payload.jq" > dispatch.json
+  -f ".github/scripts/dispatch-payload.jq" > dispatch.json
 
 gh api \
   --method POST \
