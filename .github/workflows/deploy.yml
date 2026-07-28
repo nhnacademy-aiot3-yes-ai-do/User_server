@@ -25,6 +25,7 @@ jobs:
     outputs:
       coverage_result: ${{ steps.coverage.outcome }}
       coverage_percentage: ${{ steps.sonar_metrics.outputs.coverage_percentage }}
+      coverage_threshold: ${{ steps.sonar_metrics.outputs.coverage_threshold }}
 
     permissions:
       contents: read
@@ -132,6 +133,7 @@ jobs:
           QUALITY_RESULT: ${{ needs.test-and-coverage-sonarqube.result }}
           COVERAGE_RESULT: ${{ needs.test-and-coverage-sonarqube.outputs.coverage_result }}
           COVERAGE_PERCENTAGE: ${{ needs.test-and-coverage-sonarqube.outputs.coverage_percentage }}
+          COVERAGE_THRESHOLD: ${{ needs.test-and-coverage-sonarqube.outputs.coverage_threshold }}
           BUILD_RESULT: ${{ needs.build-and-push.result }}
           SONAR_URL: ${{ vars.SONAR_DASHBOARD_URL }}
           SIMULATE_FAILURE: ${{ github.event_name == 'workflow_dispatch' && inputs.simulate_deploy_failure || false }}
