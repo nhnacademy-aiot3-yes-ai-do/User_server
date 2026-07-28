@@ -1,10 +1,10 @@
-package site.yesaido.auth_server;
+package site.yesaido.user_server;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class AuthServerApplicationTests {
+class UserServerApplicationTests {
 
     @Test
     void contextLoads() {

@@ -1,13 +1,13 @@
-package site.yesaido.auth_server;
+package site.yesaido.user_server;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class AuthServerApplication {
+public class UserServerApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(AuthServerApplication.class, args);
+        SpringApplication.run(UserServerApplication.class, args);
     }
 
 }

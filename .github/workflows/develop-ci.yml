@@ -1,0 +1,49 @@
+name: develop-ci
+
+on:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-coverage:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test1234
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+
+      - name: Test and JaCoCo 40% coverage check
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: testdb
+          DB_USERNAME: test
+          DB_PASSWORD: test1234
+          Auth_DB_SCHEMA: public
+          JWT_SECRET: test-jwt-secret-for-ci-only-please-ignore
+          JWT_ACCESSTOKEN_EXPIRATION_MS: 100000
+          JWT_REFRESHTOKEN_EXPIRATION_MS: 200000000
+        run: ./mvnw -B clean verify
