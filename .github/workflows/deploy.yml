@@ -30,6 +30,21 @@ jobs:
     permissions:
       contents: read
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test1234
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -131,6 +146,14 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.config-app-token.outputs.token }}
           CONFIG_REPOSITORY: ${{ github.repository_owner }}/Config
+
+          SERVICE_NAME: user-server
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
+          SOURCE_COMMIT_SHA: ${{ github.sha }}
+          SOURCE_ACTOR: ${{ github.actor }}
+          SOURCE_WORKFLOW_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
           IMAGE_NAME: ${{ needs.build-and-push.outputs.image_name }}
           QUALITY_RESULT: ${{ needs.test-and-coverage-sonarqube.result }}
           COVERAGE_RESULT: ${{ needs.test-and-coverage-sonarqube.outputs.coverage_result }}
