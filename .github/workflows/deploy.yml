@@ -57,31 +57,13 @@ jobs:
           distribution: temurin
           cache: maven
 
+      - uses: ./.github/actions/setup-test-env
+
       - name: Run tests
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_NAME: testdb
-          DB_USERNAME: test
-          DB_PASSWORD: test1234
-          Auth_DB_SCHEMA: public
-          JWT_SECRET: test-jwt-secret-for-ci-only-please-ignore
-          JWT_ACCESSTOKEN_EXPIRATION_MS: 100000
-          JWT_REFRESHTOKEN_EXPIRATION_MS: 200000000
         run: ./mvnw -B clean test
 
       - name: Check JaCoCo 40% coverage
         id: coverage
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_NAME: testdb
-          DB_USERNAME: test
-          DB_PASSWORD: test1234
-          Auth_DB_SCHEMA: public
-          JWT_SECRET: test-jwt-secret-for-ci-only-please-ignore
-          JWT_ACCESSTOKEN_EXPIRATION_MS: 100000
-          JWT_REFRESHTOKEN_EXPIRATION_MS: 200000000
         run: ./mvnw -B -DskipTests verify
 
       - name: Run SonarQube Quality Gate
@@ -98,7 +80,7 @@ jobs:
         env:
           SONAR_API_TOKEN: ${{ secrets.SONAR_API_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          SONAR_PROJECT_KEY: yes-nhn_user-service
+          SONAR_ANALYSIS_OUTCOME: ${{ steps.sonar.outcome }}
         run: bash .github/scripts/sonar.sh
 
   build-and-push:
