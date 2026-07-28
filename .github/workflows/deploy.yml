@@ -30,6 +30,21 @@ jobs:
     permissions:
       contents: read
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test1234
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,10 +58,30 @@ jobs:
           cache: maven
 
       - name: Run tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: testdb
+          DB_USERNAME: test
+          DB_PASSWORD: test1234
+          Auth_DB_SCHEMA: public
+          JWT_SECRET: test-jwt-secret-for-ci-only-please-ignore
+          JWT_ACCESSTOKEN_EXPIRATION_MS: 100000
+          JWT_REFRESHTOKEN_EXPIRATION_MS: 200000000
         run: ./mvnw -B clean test
 
       - name: Check JaCoCo 40% coverage
         id: coverage
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: testdb
+          DB_USERNAME: test
+          DB_PASSWORD: test1234
+          Auth_DB_SCHEMA: public
+          JWT_SECRET: test-jwt-secret-for-ci-only-please-ignore
+          JWT_ACCESSTOKEN_EXPIRATION_MS: 100000
+          JWT_REFRESHTOKEN_EXPIRATION_MS: 200000000
         run: ./mvnw -B -DskipTests verify
 
       - name: Run SonarQube Quality Gate
