@@ -5,6 +5,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import site.yesaido.user_server.domain.user.dto.UserSummaryResponse;
 import site.yesaido.user_server.domain.user.dto.search.UserSearchResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignUpRequest;
@@ -96,6 +97,12 @@ public class UserService {
 
         return userRepository.searchActiveUsers(keyword.trim(), UserStatus.DELETED).stream()
                 .map(UserSearchResponse::from)
+                .toList();
+    }
+
+    public List<UserSummaryResponse> getUsers(List<Long> userIds){
+        return userRepository.findAllById(userIds).stream()
+                .map(UserSummaryResponse::from)
                 .toList();
     }
 
