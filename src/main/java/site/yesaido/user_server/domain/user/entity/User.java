@@ -1,7 +1,6 @@
 package site.yesaido.user_server.domain.user.entity;
 
 import jakarta.persistence.*;
-
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -26,8 +25,9 @@ public class User {
     private String password;
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     @Column(name = "role", nullable = false, length = 20)
-    private Role role;
+    private Role role = Role.USER;
 
     @Column(name = "nickname", nullable = false, unique = true, length = 50)
     private String nickName;

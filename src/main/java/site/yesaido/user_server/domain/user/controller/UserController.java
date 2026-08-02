@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import site.yesaido.user_server.domain.user.dto.UserSummaryResponse;
 import site.yesaido.user_server.domain.user.dto.search.UserSearchResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignUpRequest;
@@ -14,7 +15,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 public class UserController {
     private final UserService userService;
 
@@ -41,6 +42,12 @@ public class UserController {
     @GetMapping("/search")
     public ResponseEntity<List<UserSearchResponse>> search(@RequestParam("keyword") String keyword){
         List<UserSearchResponse> response = userService.searchUsers(keyword);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/batch")
+    public ResponseEntity<List<UserSummaryResponse>> getUsers(@RequestParam("ids") List<Long> ids){
+        List<UserSummaryResponse> response = userService.getUsers(ids);
         return ResponseEntity.ok(response);
     }
 
