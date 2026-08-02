@@ -8,6 +8,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import site.yesaido.user_server.domain.user.dto.UserSummaryResponse;
+import site.yesaido.user_server.domain.user.dto.search.UserSearchResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignUpRequest;
 import site.yesaido.user_server.domain.user.entity.Role;
@@ -20,6 +22,7 @@ import site.yesaido.user_server.domain.user.exception.UserNotFoundException;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
 import site.yesaido.user_server.domain.user.service.UserService;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -220,6 +223,86 @@ class UserServiceTest {
         }
     }
 
+    @Test
+    @DisplayName("이메일이 존재하면 true 반환")
+    void existsEmail_true(){
+        given(userRepository.existsByEmail("test@test.com")).willReturn(true);
+
+        boolean result = userService.existsEmail("test@test.com");
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("이메일이 존재하지 않으면 false 반환")
+    void existsEmail_false(){
+        given(userRepository.existsByEmail("new@test.com")).willReturn(false);
+
+        boolean result = userService.existsEmail("new@test.com");
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    @DisplayName("닉네임이 존재하면 true 반환")
+    void existNickname_true(){
+        given(userRepository.existsByNickName("닉네임")).willReturn(true);
+
+        boolean result = userService.existNickname("닉네임");
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("닉네임이 존재하지 않으면 false 반환")
+    void existNickname_false(){
+        given(userRepository.existsByNickName("새닉네임")).willReturn(false);
+
+        boolean result = userService.existNickname("새닉네임");
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    @DisplayName("키워드가 비어있으면 빈 리스트를 반환하고 저장소를 호출하지 않는다")
+    void searchUsers_blankKeyword(){
+        List<UserSearchResponse> result = userService.searchUsers("   ");
+
+        assertThat(result).isEmpty();
+        verify(userRepository, never()).searchActiveUsers(any(), any());
+    }
+
+    @Test
+    @DisplayName("키워드로 활성 사용자를 검색해서 반환한다")
+    void searchUsers_success(){
+        User user = User.builder()
+                .id(1L)
+                .nickName("닉네임")
+                .status(UserStatus.ACTIVE)
+                .build();
+
+        given(userRepository.searchActiveUsers("닉네임", UserStatus.DELETED))
+                .willReturn(List.of(user));
+
+        List<UserSearchResponse> result = userService.searchUsers("닉네임");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).nickname()).isEqualTo("닉네임");
+    }
+
+    @Test
+    @DisplayName("ID 목록으로 사용자 요약 정보를 조회한다")
+    void getUsers_success(){
+        User user1 = User.builder().id(1L).nickName("닉네임1").build();
+        User user2 = User.builder().id(2L).nickName("닉네임2").build();
+
+        given(userRepository.findAllById(List.of(1L, 2L))).willReturn(List.of(user1, user2));
+
+        List<UserSummaryResponse> result = userService.getUsers(List.of(1L, 2L));
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).nickname()).isEqualTo("닉네임1");
+    }
 }
 
 
