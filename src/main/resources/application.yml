@@ -28,6 +28,12 @@ spring:
     access-token-expiration-ms: ${JWT_ACCESSTOKEN_EXPIRATION_MS:1000000}
     refresh-token-expiration-ms: ${JWT_REFRESHTOKEN_EXPIRATION_MS:1209600000}
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 310
+
 eureka:
   client:
     enabled: ${EUREKA_ENABLED:false}
@@ -35,3 +41,4 @@ eureka:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: true
+

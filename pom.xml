@@ -133,6 +133,10 @@
             <artifactId>spring-boot-starter-actuator-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
@@ -163,6 +167,7 @@
                 <artifactId>bcprov-jdk18on</artifactId>
                 <version>1.84</version>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 

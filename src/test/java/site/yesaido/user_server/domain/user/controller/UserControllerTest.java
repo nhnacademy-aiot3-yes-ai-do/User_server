@@ -1,4 +1,4 @@
-package site.yesaido.user_server.controller;
+package site.yesaido.user_server.domain.user.controller;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

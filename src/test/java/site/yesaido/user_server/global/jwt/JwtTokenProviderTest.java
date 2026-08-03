@@ -11,12 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  class JwtTokenProviderTest {
 
     private JwtTokenProvider jwtTokenProvider;
-    private final String secretKey = "3qQ2N6snwhv/zGlxiTm/BmUWigj9LBdjePt5sdkB53c=";
 
-    @BeforeEach
+     @BeforeEach
     void setUp(){
         jwtTokenProvider = new JwtTokenProvider();
-        ReflectionTestUtils.setField(jwtTokenProvider, "secretKey", secretKey);
+         String secretKey = "dGVzdC1qd3Qtc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmctZm9yLWhzMjU2LWFsZ29yaXRobS10ZXN0";
+         ReflectionTestUtils.setField(jwtTokenProvider, "secretKey", secretKey);
         ReflectionTestUtils.setField(jwtTokenProvider,"accessTokenExpireTime", 1800000L);
         ReflectionTestUtils.setField(jwtTokenProvider, "refreshTokenExpireTime", 1209600000L);
         jwtTokenProvider.init();

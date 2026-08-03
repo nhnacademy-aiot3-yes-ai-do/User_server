@@ -1,0 +1,17 @@
+### 1. 이메일 6자리 인증번호 발송
+POST http://localhost:8081/api/auth/email/send
+Content-Type: application/json
+
+{
+  "email": "rnrn428@naver.com"
+}
+
+
+### 2. 이메일 6자리 인증번호 검증 요청
+POST http://localhost:8081/api/auth/email/verify
+Content-Type: application/json
+
+{
+  "email": "rnrn428@naver.com",
+  "code": "390147"
+}
