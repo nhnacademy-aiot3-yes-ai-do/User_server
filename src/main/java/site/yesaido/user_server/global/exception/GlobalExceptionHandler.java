@@ -38,6 +38,12 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.UNAUTHORIZED, e.getMessage());
     }
 
+    @ExceptionHandler(TooManyRequestException.class)
+    public ResponseEntity<ErrorResponse> handleTooManyRequestException(TooManyRequestException e, ServerWebExchange exchange) {
+        logWarnFormat(HttpStatus.TOO_MANY_REQUESTS, e, exchange);
+        return buildResponse(HttpStatus.TOO_MANY_REQUESTS, e.getMessage());
+    }
+
     // 500
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneralException(Exception e, ServerWebExchange exchange){
