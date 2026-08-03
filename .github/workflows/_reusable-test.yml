@@ -29,4 +29,7 @@ jobs:
           cache: maven
       - uses: ./.github/actions/setup-test-env
       - name: Test and coverage check
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
         run: ./mvnw -B clean verify

@@ -10,16 +10,10 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@ActiveProfiles("test")
 class UserServerApplicationTests {
 
-    @Autowired
-    private ApplicationContext applicationContext;
-
     @Test
-    @DisplayName("성공 : 스프링 부트 애플리케이션 컨텍스트가 정상 로드된다")
     void contextLoads() {
-        assertThat(applicationContext).isNotNull();
     }
 
 }
