@@ -52,7 +52,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(WebExchangeBindException.class)
     public ResponseEntity<ErrorResponse> handleWebExchangeBindException(WebExchangeBindException e, ServerWebExchange exchange){
-        String errorMessage = e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+        String errorMessage = e.getBindingResult().getAllErrors().getFirst().getDefaultMessage();
         logWarnFormat(HttpStatus.BAD_REQUEST, e, exchange);
         return buildResponse(HttpStatus.BAD_REQUEST, errorMessage);
     }
