@@ -31,12 +31,12 @@ class EmailControllerTest {
     private EmailController emailController;
 
     @Test
-    @DisplayName("성공 : X-Forwarded-For 헤더가 있으면 해당 IP로 발송 요청한다.")
+    @DisplayName("성공 : X-Real-Client-Ip 헤더가 있으면 해당 IP로 발송 요청한다.")
     void sendEmail_success_withForwardedFor(){
         EmailSendRequest request = new EmailSendRequest("test@naver.com");
         ServerWebExchange exchange = MockServerWebExchange.from(
                 MockServerHttpRequest.post("/auth/email/send")
-                        .header("X-Forwarded-For", "1.2.3.4, 5.6.7.8")
+                        .header("X-Real-Client-Ip", "1.2.3.4")
         );
 
         ResponseEntity<String> response = emailController.sendEmail(request, exchange);
@@ -47,7 +47,7 @@ class EmailControllerTest {
     }
 
     @Test
-    @DisplayName("성공 : X-Forwarded-For 헤더가 없으면 remoteAddress로 발송 요청한다.")
+    @DisplayName("성공 : X-Real-Client-Ip 헤더가 없으면 remoteAddress로 발송 요청한다.")
     void sendEmail_success_withoutForwardedFor(){
         EmailSendRequest request = new EmailSendRequest("test@naver.com");
         ServerWebExchange exchange = MockServerWebExchange.from(

@@ -32,9 +32,9 @@ public class EmailController {
 
     // Helper Method
     private String resolveClientIp(ServerWebExchange exchange) {
-        String forwardedFor = exchange.getRequest().getHeaders().getFirst("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            return forwardedFor.split(",")[0].trim();
+        String clientIp = exchange.getRequest().getHeaders().getFirst("X-Real-Client-Ip");
+        if (clientIp != null && !clientIp.isBlank()) {
+            return clientIp;
         }
         return exchange.getRequest().getRemoteAddress() != null
                 ? exchange.getRequest().getRemoteAddress().getAddress().getHostAddress()
