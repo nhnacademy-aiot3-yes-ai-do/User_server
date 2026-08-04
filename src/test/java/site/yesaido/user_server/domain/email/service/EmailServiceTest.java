@@ -11,12 +11,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
 import site.yesaido.user_server.domain.user.exception.TooManyRequestException;
-
 import java.util.concurrent.TimeUnit;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
@@ -28,7 +25,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class EmailServiceTest {
     @Mock
-    private JavaMailSender mailSender;
+    private AsyncMailSender asyncMailSender;
 
     @Mock
     private StringRedisTemplate stringRedisTemplate;
@@ -51,46 +48,28 @@ class EmailServiceTest {
         @DisplayName("성공 : 이메일 발송 및 레디스 5분 TTL 저장, 60초 쿨다운 등록")
         void success_sendVerificationEmail(){
             String toEmail = "test@naver.com";
-            String clientIp = "1.2.3.4";
-            given(stringRedisTemplate.hasKey("EMAIL_SEND_COOLDOWN:" + toEmail)).willReturn(false);
+            given(stringRedisTemplate.hasKey("EMAIL_RESEND_WAIT:" + toEmail)).willReturn(false);
             given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
-            given(valueOperations.increment("EMAIL_SEND_IP:" + clientIp)).willReturn(1L);
 
-            emailService.sendVerificationEmail(toEmail, clientIp);
+            emailService.sendVerificationEmail(toEmail);
 
-            verify(mailSender).send(any(SimpleMailMessage.class));
-            verify(stringRedisTemplate).expire("EMAIL_SEND_IP:" + clientIp, 3600L, TimeUnit.SECONDS);
+            verify(asyncMailSender).sendMailAsync(any(SimpleMailMessage.class));
             verify(valueOperations).set(eq("EMAIL_VERIFY:" + toEmail), anyString(), eq(5L), eq(TimeUnit.MINUTES));
-            verify(valueOperations).set(eq("EMAIL_SEND_COOLDOWN:" + toEmail), eq("1"), eq(60L), eq(TimeUnit.SECONDS));
+            verify(valueOperations).set("EMAIL_RESEND_WAIT:" + toEmail, "1", 60L, TimeUnit.SECONDS);
         }
 
         @Test
         @DisplayName("실패 : 쿨다운(60초) 내 재요청 시 TooManyRequestException")
         void fail_sendVerificationEmail_cooldownActive(){
             String toEmail = "test@naver.com";
-            String clientIp = "1.2.3.4";
-            given(stringRedisTemplate.hasKey("EMAIL_SEND_COOLDOWN:" + toEmail)).willReturn(true);
+            given(stringRedisTemplate.hasKey("EMAIL_RESEND_WAIT:" + toEmail)).willReturn(true);
 
-            assertThatThrownBy(() -> emailService.sendVerificationEmail(toEmail, clientIp))
+            assertThatThrownBy(() -> emailService.sendVerificationEmail(toEmail))
                     .isInstanceOf(TooManyRequestException.class);
 
-            verify(mailSender, never()).send(any(SimpleMailMessage.class));
+            verify(asyncMailSender, never()).sendMailAsync(any(SimpleMailMessage.class));
         }
 
-        @Test
-        @DisplayName("실패 : 동일 IP 시간당 발송 한도 초과 시 TooManyRequestException")
-        void fail_sendVerificationEmail_ipLimitExceeded(){
-            String toEmail = "test@naver.com";
-            String clientIp = "1.2.3.4";
-            given(stringRedisTemplate.hasKey("EMAIL_SEND_COOLDOWN:" + toEmail)).willReturn(false);
-            given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
-            given(valueOperations.increment("EMAIL_SEND_IP:" + clientIp)).willReturn(6L);
-
-            assertThatThrownBy(() -> emailService.sendVerificationEmail(toEmail, clientIp))
-                    .isInstanceOf(TooManyRequestException.class);
-
-            verify(mailSender, never()).send(any(SimpleMailMessage.class));
-        }
     }
 
     @Nested
@@ -104,12 +83,11 @@ class EmailServiceTest {
 
             given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
             given(valueOperations.get("EMAIL_VERIFY_FAIL:" + email)).willReturn(null);
-            given(valueOperations.get("EMAIL_VERIFY:" + email)).willReturn("123456");
+            given(valueOperations.getAndDelete("EMAIL_VERIFY:" + email)).willReturn("123456");
 
             boolean result = emailService.verifyCode(email, code);
 
             assertThat(result).isTrue();
-            verify(stringRedisTemplate).delete("EMAIL_VERIFY:" + email);
             verify(stringRedisTemplate).delete("EMAIL_VERIFY_FAIL:" + email);
         }
 
@@ -121,7 +99,7 @@ class EmailServiceTest {
 
             given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
             given(valueOperations.get("EMAIL_VERIFY_FAIL:" + email)).willReturn(null);
-            given(valueOperations.get("EMAIL_VERIFY:" + email)).willReturn(null);
+            given(valueOperations.getAndDelete("EMAIL_VERIFY:" + email)).willReturn(null);
             given(valueOperations.increment("EMAIL_VERIFY_FAIL:" + email)).willReturn(1L);
 
             boolean result = emailService.verifyCode(email, code);
@@ -139,7 +117,7 @@ class EmailServiceTest {
 
             given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
             given(valueOperations.get("EMAIL_VERIFY_FAIL:" + email)).willReturn(null);
-            given(valueOperations.get("EMAIL_VERIFY:" + email)).willReturn(savedCode);
+            given(valueOperations.getAndDelete("EMAIL_VERIFY:" + email)).willReturn(savedCode);
             given(valueOperations.increment("EMAIL_VERIFY_FAIL:" + email)).willReturn(1L);
 
             boolean result = emailService.verifyCode(email, inputCode);

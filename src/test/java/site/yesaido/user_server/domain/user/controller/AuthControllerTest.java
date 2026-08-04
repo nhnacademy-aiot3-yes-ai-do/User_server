@@ -72,7 +72,7 @@ class AuthControllerTest {
 
         ResponseEntity<Void> response = authController.logout(userId);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         verify(authService).logout(userId);
     }
 }

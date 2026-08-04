@@ -20,7 +20,6 @@ import site.yesaido.user_server.domain.user.exception.EmailDuplicationException;
 import site.yesaido.user_server.domain.user.exception.NicknameDuplicationException;
 import site.yesaido.user_server.domain.user.exception.UserNotFoundException;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
-import site.yesaido.user_server.domain.user.service.UserService;
 
 import java.util.List;
 import java.util.Optional;

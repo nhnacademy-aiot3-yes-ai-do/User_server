@@ -20,7 +20,7 @@ import static org.mockito.BDDMockito.given;
 
 
 @ExtendWith(MockitoExtension.class)
-public class GlobalExceptionHandlerTest {
+class GlobalExceptionHandlerTest {
     @InjectMocks
     private GlobalExceptionHandler globalExceptionHandler;
 
@@ -53,13 +53,13 @@ public class GlobalExceptionHandlerTest {
     @DisplayName("InvalidPasswordException 발생 시 400 BAD_REQUEST와 에러 메시지를 반환한다")
     void handleInvalidPasswordException_success(){
         setupMockExchange();
-        InvalidPasswordException e = new InvalidPasswordException("유효하지 않는 비밀번호입니다.");
+        InvalidPasswordException e = new InvalidPasswordException();
 
         ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleBadRequestException(e, exchange);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getMessage()).isEqualTo("유효하지 않는 비밀번호입니다.");
+        assertThat(response.getBody().getMessage()).isEqualTo("비밀번호가 일치하지 않습니다.");
     }
 
     @Test

@@ -36,10 +36,10 @@ public class AuthService {
         }
 
         if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
-            throw new InvalidPasswordException("비밀번호가 일치하지 않습니다.");
+            throw new InvalidPasswordException();
         }
 
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
+        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
 
         stringRedisTemplate.opsForValue().set(
@@ -74,7 +74,7 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("유저를 찾을 수 없습니다."));
 
-        String newAccessToken = jwtTokenProvider.createAccessToken(userId, user.getEmail(), user.getRole());
+        String newAccessToken = jwtTokenProvider.createAccessToken(userId, user.getRole());
         String newRefreshToken = jwtTokenProvider.createRefreshToken(userId);
 
         stringRedisTemplate.opsForValue().set("RT:" + user.getId(), newRefreshToken, 14, TimeUnit.DAYS);
