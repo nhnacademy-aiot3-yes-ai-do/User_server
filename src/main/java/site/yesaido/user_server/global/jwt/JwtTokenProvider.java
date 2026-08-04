@@ -33,13 +33,12 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String createAccessToken(Long userId, String email, Role role){
+    public String createAccessToken(Long userId, Role role){
         Date now = new Date();
         Date validity = new Date(now.getTime() + accessTokenExpireTime);
 
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
-                .claim("email", email)
                 .claim("role", role.name())
                 .setIssuedAt(now)
                 .setExpiration(validity)

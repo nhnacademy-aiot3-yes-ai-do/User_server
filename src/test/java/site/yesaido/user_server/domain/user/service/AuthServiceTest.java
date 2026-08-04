@@ -1,6 +1,5 @@
 package site.yesaido.user_server.domain.user.service;
 
-import org.jose4j.jwk.Use;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,7 +21,6 @@ import site.yesaido.user_server.domain.user.exception.InvalidPasswordException;
 import site.yesaido.user_server.domain.user.exception.InvalidTokenException;
 import site.yesaido.user_server.domain.user.exception.UserNotFoundException;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
-import site.yesaido.user_server.domain.user.service.AuthService;
 import site.yesaido.user_server.global.jwt.JwtTokenProvider;
 
 import java.util.Optional;
@@ -65,7 +63,7 @@ class AuthServiceTest {
 
             given(userRepository.findByEmail(request.getEmail())).willReturn(Optional.of(user));
             given(passwordEncoder.matches(request.getPassword(), user.getPassword())).willReturn(true);
-            given(jwtTokenProvider.createAccessToken(anyLong(), any(), any())).willReturn("mockAccessToken");
+            given(jwtTokenProvider.createAccessToken(anyLong(), any())).willReturn("mockAccessToken");
             given(jwtTokenProvider.createRefreshToken(anyLong())).willReturn("mockRefreshToken");
             given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
 
@@ -131,7 +129,7 @@ class AuthServiceTest {
             given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
             given(valueOperations.get("RT:" + userId)).willReturn(refreshToken);
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
-            given(jwtTokenProvider.createAccessToken(anyLong(), any(), any())).willReturn("newAccessToken");
+            given(jwtTokenProvider.createAccessToken(anyLong(), any())).willReturn("newAccessToken");
             given(jwtTokenProvider.createRefreshToken(anyLong())).willReturn("newRefreshToken");
 
             TokenResponse response = authService.reissue(refreshToken);

@@ -8,15 +8,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
-import org.springframework.mock.web.server.MockServerWebExchange;
-import org.springframework.web.server.ServerWebExchange;
 import site.yesaido.user_server.domain.email.dto.EmailSendRequest;
 import site.yesaido.user_server.domain.email.dto.EmailVerifyRequest;
 import site.yesaido.user_server.domain.email.service.EmailService;
-
-import java.net.InetSocketAddress;
-
+import site.yesaido.user_server.global.common.ApiResponse;
 import static org.mockito.BDDMockito.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -31,35 +26,22 @@ class EmailControllerTest {
     private EmailController emailController;
 
     @Test
-    @DisplayName("성공 : X-Forwarded-For 헤더가 있으면 해당 IP로 발송 요청한다.")
-    void sendEmail_success_withForwardedFor(){
-        EmailSendRequest request = new EmailSendRequest("test@naver.com");
-        ServerWebExchange exchange = MockServerWebExchange.from(
-                MockServerHttpRequest.post("/auth/email/send")
-                        .header("X-Forwarded-For", "1.2.3.4, 5.6.7.8")
-        );
+    @DisplayName("성공 : 이메일 인증번호 발송 요청 시 200 OK와 성공 메시지를 반환한다")
+    void sendEmail_success() {
 
-        ResponseEntity<String> response = emailController.sendEmail(request, exchange);
+        EmailSendRequest request = new EmailSendRequest("test@naver.com");
+
+        ResponseEntity<ApiResponse<Void>> response = emailController.sendEmail(request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo("인증번호가 발송되었습니다.");
-        verify(emailService).sendVerificationEmail("test@naver.com", "1.2.3.4");
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getStatus()).isEqualTo(200);
+        assertThat(response.getBody().getMessage()).isEqualTo("인증번호가 발송되었습니다.");
+
+        verify(emailService).sendVerificationEmail("test@naver.com");
     }
 
-    @Test
-    @DisplayName("성공 : X-Forwarded-For 헤더가 없으면 remoteAddress로 발송 요청한다.")
-    void sendEmail_success_withoutForwardedFor(){
-        EmailSendRequest request = new EmailSendRequest("test@naver.com");
-        ServerWebExchange exchange = MockServerWebExchange.from(
-                MockServerHttpRequest.post("/auth/email/send")
-                        .remoteAddress(new InetSocketAddress("127.0.0.1", 12345))
-        );
 
-        ResponseEntity<String> response = emailController.sendEmail(request, exchange);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(emailService).sendVerificationEmail("test@naver.com", "127.0.0.1");
-    }
 
     @Test
     @DisplayName("성공 : 인증번호 검증 요청 시 200 OK와 일치 결과 true를 반환한다.")
@@ -67,10 +49,14 @@ class EmailControllerTest {
         EmailVerifyRequest request = new EmailVerifyRequest("test@naver.com", "123456");
         given(emailService.verifyCode("test@naver.com", "123456")).willReturn(true);
 
-        ResponseEntity<Boolean> response = emailController.verifyEmail(request);
+        ResponseEntity<ApiResponse<Boolean>> response = emailController.verifyEmail(request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isTrue();
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getStatus()).isEqualTo(200);
+        assertThat(response.getBody().getMessage()).isEqualTo("인증번호 검증 결과입니다.");
+        assertThat(response.getBody().getData()).isTrue();
+
         verify(emailService).verifyCode("test@naver.com", "123456");
     }
 }
