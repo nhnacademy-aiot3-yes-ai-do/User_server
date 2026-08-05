@@ -17,5 +17,8 @@ runs:
         echo "REDIS_HOST=localhost" >> "$GITHUB_ENV"
         echo "REDIS_PORT=6379" >> "$GITHUB_ENV"
         echo "REDIS_PASSWORD=testpassword" >> "$GITHUB_ENV"
+        echo "REDIS_HOST=localhost" >> "$GITHUB_ENV"
+        echo "REDIS_PORT=6379" >> "$GITHUB_ENV"
+        echo "REDIS_PASSWORD=" >> "$GITHUB_ENV"
         echo "MAIL_USERNAME=test@naver.com" >> "$GITHUB_ENV"
         echo "MAIL_PASSWORD=testpassword" >> "$GITHUB_ENV"
