@@ -21,7 +21,7 @@ spring:
       ddl-auto: validate
     properties:
       hibernate:
-        default_schema: ${Auth_DB_SCHEMA}
+        default_schema: ${AUTH_DB_SCHEMA}
 
   jwt:
     secret: ${JWT_SECRET}

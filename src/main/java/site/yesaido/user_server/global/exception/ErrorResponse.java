@@ -10,5 +10,7 @@ public class ErrorResponse {
     private final int status;
     private final String error;
     private final String message;
+
+    @Builder.Default
     private final LocalDateTime dateTime = LocalDateTime.now();
 }
