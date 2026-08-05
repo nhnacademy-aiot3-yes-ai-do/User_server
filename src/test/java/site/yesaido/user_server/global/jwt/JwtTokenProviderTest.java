@@ -11,9 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  class JwtTokenProviderTest {
 
     private JwtTokenProvider jwtTokenProvider;
-    private final String secretKey = "3qQ2N6snwhv/zGlxiTm/BmUWigj9LBdjePt5sdkB53c=";
 
-    @BeforeEach
+    private static String secretKey = "dGVzdC1qd3Qtc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmctZm9yLWhzMjU2LWFsZ29yaXRobS10ZXN0";
+
+
+     @BeforeEach
     void setUp(){
         jwtTokenProvider = new JwtTokenProvider();
         ReflectionTestUtils.setField(jwtTokenProvider, "secretKey", secretKey);
@@ -26,10 +28,9 @@ import static org.assertj.core.api.Assertions.assertThat;
     @DisplayName("성공 : accessToken 발급 성공")
     void createAccessToken_success(){
         Long userId = 1L;
-        String email = "nhn123@naver.com";
         Role role = Role.USER;
 
-        String accessToken = jwtTokenProvider.createAccessToken(userId, email, role);
+        String accessToken = jwtTokenProvider.createAccessToken(userId, role);
 
         assertThat(accessToken).isNotNull();
         assertThat(jwtTokenProvider.validateToken(accessToken)).isTrue();
@@ -51,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
     @DisplayName("성공 : 생성된 토큰에서 userId를 추출한다")
     void getUserIdFromToken_success(){
         Long userId = 4L;
-        String accessToken = jwtTokenProvider.createAccessToken(userId, "nhn123@naver.com", Role.USER);
+        String accessToken = jwtTokenProvider.createAccessToken(userId, Role.USER);
 
         Long extractUserId = jwtTokenProvider.getUserIdFromToken(accessToken);
 

@@ -18,7 +18,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         default_schema: ${Auth_DB_SCHEMA}
@@ -28,6 +28,30 @@ spring:
     access-token-expiration-ms: ${JWT_ACCESSTOKEN_EXPIRATION_MS:1000000}
     refresh-token-expiration-ms: ${JWT_REFRESHTOKEN_EXPIRATION_MS:1209600000}
 
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      database: 310
+      password: ${REDIS_PASSWORD}
+
+  mail:
+    host: smtp.naver.com
+    port: 465
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+            trust: smtp.naver.com
+          socketFactory:
+            port: 465
+            class: javax.net.ssl.SSLSocketFactory
+            fallback: false
+
 eureka:
   client:
     enabled: ${EUREKA_ENABLED:false}
@@ -35,3 +59,4 @@ eureka:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: true
+

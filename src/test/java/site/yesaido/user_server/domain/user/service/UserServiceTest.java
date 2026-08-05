@@ -1,4 +1,4 @@
-package site.yesaido.user_server.service;
+package site.yesaido.user_server.domain.user.service;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,7 +20,6 @@ import site.yesaido.user_server.domain.user.exception.EmailDuplicationException;
 import site.yesaido.user_server.domain.user.exception.NicknameDuplicationException;
 import site.yesaido.user_server.domain.user.exception.UserNotFoundException;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
-import site.yesaido.user_server.domain.user.service.UserService;
 
 import java.util.List;
 import java.util.Optional;
@@ -89,9 +88,7 @@ class UserServiceTest {
 
             given(userRepository.existsByEmail(requestDto.getEmail())).willReturn(true);
 
-            assertThrows(EmailDuplicationException.class, () -> {
-                userService.signUp(requestDto);
-            });
+            assertThrows(EmailDuplicationException.class, () -> userService.signUp(requestDto));
 
             verify(userRepository, never()).save(any(User.class));
 
@@ -109,9 +106,7 @@ class UserServiceTest {
 
             given(userRepository.existsByNickName(requestDto.getNickName())).willReturn(true);
 
-            assertThrows(NicknameDuplicationException.class, () -> {
-                userService.signUp(requestDto);
-            });
+            assertThrows(NicknameDuplicationException.class, () -> userService.signUp(requestDto));
 
             verify(userRepository, never()).save(any(User.class));
         }
@@ -142,9 +137,7 @@ class UserServiceTest {
         void getUserById_UserNotFound(){
             given(userRepository.findById(99L)).willReturn(Optional.empty());
 
-            assertThrows(UserNotFoundException.class, ()->{
-               userService.getUserById(99L);
-            });
+            assertThrows(UserNotFoundException.class, ()-> userService.getUserById(99L));
 
         }
 
@@ -157,9 +150,7 @@ class UserServiceTest {
 
             given(userRepository.findById(1L)).willReturn(Optional.of(deletedUser));
 
-            assertThrows(AlreadyWithdrawnException.class, () -> {
-                userService.getUserById(1L);
-            });
+            assertThrows(AlreadyWithdrawnException.class, () -> userService.getUserById(1L));
         }
     }
 
@@ -196,9 +187,7 @@ class UserServiceTest {
             given(userRepository.findById(1L)).willReturn(Optional.of(updateUser));
             given(userRepository.existsByNickName(newNick)).willReturn(true);
 
-            assertThrows(NicknameDuplicationException.class, () -> {
-                userService.updateProfile(1L, newNick);
-            });
+            assertThrows(NicknameDuplicationException.class, () -> userService.updateProfile(1L, newNick));
         }
     }
 

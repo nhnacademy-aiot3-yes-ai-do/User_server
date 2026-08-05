@@ -1,4 +1,4 @@
-package site.yesaido.user_server.entity;
+package site.yesaido.user_server.domain.user.entity;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
