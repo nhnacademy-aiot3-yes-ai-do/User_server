@@ -8,7 +8,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import site.yesaido.user_server.domain.user.controller.AuthController;
 import site.yesaido.user_server.domain.user.dto.login.LoginRequest;
 import site.yesaido.user_server.domain.user.dto.token.ReissueRequest;
 import site.yesaido.user_server.domain.user.dto.token.TokenResponse;

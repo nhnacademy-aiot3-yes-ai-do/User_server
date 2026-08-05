@@ -12,8 +12,9 @@ import site.yesaido.user_server.domain.email.dto.EmailSendRequest;
 import site.yesaido.user_server.domain.email.dto.EmailVerifyRequest;
 import site.yesaido.user_server.domain.email.service.EmailService;
 import site.yesaido.user_server.global.common.ApiResponse;
-import static org.mockito.BDDMockito.given;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 
