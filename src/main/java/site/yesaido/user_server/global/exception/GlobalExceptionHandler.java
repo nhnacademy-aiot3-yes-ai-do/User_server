@@ -71,7 +71,6 @@ public class GlobalExceptionHandler {
                 method, path, status.value(), e.getClass().getSimpleName(), e.getMessage());
     }
 
-
     private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String message){
         ErrorResponse response = ErrorResponse.builder()
                 .status(status.value())

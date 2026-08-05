@@ -2,7 +2,6 @@ package site.yesaido.user_server.domain.user.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import site.yesaido.user_server.domain.user.dto.UserSummaryResponse;
@@ -10,6 +9,7 @@ import site.yesaido.user_server.domain.user.dto.search.UserSearchResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignUpRequest;
 import site.yesaido.user_server.domain.user.service.UserService;
+import site.yesaido.user_server.global.common.ApiResponse;
 
 import java.util.List;
 
@@ -19,23 +19,28 @@ import java.util.List;
 public class UserController {
     private final UserService userService;
 
+    // 1. 이메일 중복 체크
     @GetMapping("/check-email")
-    public ResponseEntity<Boolean> checkEmail(@RequestParam("email") String email){
+    public ResponseEntity<ApiResponse<Boolean>> checkEmail(@RequestParam("email") String email){
         boolean isDuplicated = userService.existsEmail(email);
-
-        return ResponseEntity.ok(isDuplicated);
+        ApiResponse<Boolean> apiResponse = ApiResponse.ok("이메일 중복 체크 결과입니다.", isDuplicated);
+        return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
     }
 
+    // 2. 닉네임 중복 체크
     @GetMapping("/check-nickname")
-    public ResponseEntity<Boolean> checkNickname(@RequestParam("nickname") String nickName){
+    public ResponseEntity<ApiResponse<Boolean>> checkNickname(@RequestParam("nickname") String nickName){
         boolean isDuplicated = userService.existNickname(nickName);
-        return ResponseEntity.ok(isDuplicated);
+        ApiResponse<Boolean> apiResponse = ApiResponse.ok("닉네임 중복 체크 결과입니다.", isDuplicated);
+        return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
     }
 
+    // 3. 회원가입 (201 Created)
     @PostMapping("/signup")
-    public ResponseEntity<UserSignResponse> signUp(@Valid @RequestBody UserSignUpRequest signUpRequestDto){
+    public ResponseEntity<ApiResponse<UserSignResponse>> signUp(@Valid @RequestBody UserSignUpRequest signUpRequestDto){
         UserSignResponse responseDto = userService.signUp(signUpRequestDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+        ApiResponse<UserSignResponse> apiResponse = ApiResponse.created("회원가입이 성공적으로 완료되었습니다.", responseDto);
+        return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
     }
 
     // 재배 멤버 초대용: 닉네임 부분일치 또는 이메일 완전일치로 사용자 검색

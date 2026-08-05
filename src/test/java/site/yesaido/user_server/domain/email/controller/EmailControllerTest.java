@@ -35,8 +35,8 @@ class EmailControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getStatus()).isEqualTo(200);
-        assertThat(response.getBody().getMessage()).isEqualTo("인증번호가 발송되었습니다.");
+        assertThat(response.getBody().success()).isTrue();
+        assertThat(response.getBody().message()).isEqualTo("인증번호가 발송되었습니다.");
 
         verify(emailService).sendVerificationEmail("test@naver.com");
     }
@@ -53,9 +53,9 @@ class EmailControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getStatus()).isEqualTo(200);
-        assertThat(response.getBody().getMessage()).isEqualTo("인증번호 검증 결과입니다.");
-        assertThat(response.getBody().getData()).isTrue();
+        assertThat(response.getBody().success()).isTrue();
+        assertThat(response.getBody().message()).isEqualTo("인증 검증 결과입니다.");
+        assertThat(response.getBody().data()).isTrue();
 
         verify(emailService).verifyCode("test@naver.com", "123456");
     }

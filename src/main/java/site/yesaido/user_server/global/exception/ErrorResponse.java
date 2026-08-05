@@ -7,8 +7,8 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 public class ErrorResponse {
-    private final LocalDateTime dateTime = LocalDateTime.now();
     private final int status;
     private final String error;
     private final String message;
+    private final LocalDateTime dateTime = LocalDateTime.now();
 }

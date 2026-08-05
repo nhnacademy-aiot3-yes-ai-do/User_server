@@ -13,6 +13,7 @@ import site.yesaido.user_server.domain.user.dto.login.LoginRequest;
 import site.yesaido.user_server.domain.user.dto.token.ReissueRequest;
 import site.yesaido.user_server.domain.user.dto.token.TokenResponse;
 import site.yesaido.user_server.domain.user.service.AuthService;
+import site.yesaido.user_server.global.common.ApiResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -38,12 +39,12 @@ class AuthControllerTest {
 
         given(authService.login(request)).willReturn(tokenResponse);
 
-        ResponseEntity<TokenResponse> response = authController.login(request);
+        ResponseEntity<ApiResponse<TokenResponse>> response = authController.login(request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getAccessToken()).isEqualTo("access-token");
-        assertThat(response.getBody().getRefreshToken()).isEqualTo("refresh-token");
+        assertThat(response.getBody().data().getAccessToken()).isEqualTo("access-token");
+        assertThat(response.getBody().data().getRefreshToken()).isEqualTo("refresh-token");
     }
 
     @Test
@@ -57,12 +58,12 @@ class AuthControllerTest {
 
         given(authService.reissue(request.getRefreshToken())).willReturn(tokenResponse);
 
-        ResponseEntity<TokenResponse> response = authController.reissue(request);
+        ResponseEntity<ApiResponse<TokenResponse>> response = authController.reissue(request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getAccessToken()).isEqualTo("newAccessToken");
-        assertThat(response.getBody().getRefreshToken()).isEqualTo("newRefreshToken");
+        assertThat(response.getBody().data().getAccessToken()).isEqualTo("newAccessToken");
+        assertThat(response.getBody().data().getRefreshToken()).isEqualTo("newRefreshToken");
     }
 
     @Test

@@ -55,7 +55,7 @@ class EmailServiceTest {
 
             verify(asyncMailSender).sendMailAsync(any(SimpleMailMessage.class));
             verify(valueOperations).set(eq("EMAIL_VERIFY:" + toEmail), anyString(), eq(5L), eq(TimeUnit.MINUTES));
-            verify(valueOperations).set("EMAIL_RESEND_WAIT:" + toEmail, "1", 60L, TimeUnit.SECONDS);
+            verify(valueOperations).set("EMAIL_RESEND_WAIT:" + toEmail, "1", 30L, TimeUnit.SECONDS);
         }
 
         @Test
@@ -83,11 +83,12 @@ class EmailServiceTest {
 
             given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
             given(valueOperations.get("EMAIL_VERIFY_FAIL:" + email)).willReturn(null);
-            given(valueOperations.getAndDelete("EMAIL_VERIFY:" + email)).willReturn("123456");
+            given(valueOperations.get("EMAIL_VERIFY:" + email)).willReturn("123456");
 
             boolean result = emailService.verifyCode(email, code);
 
             assertThat(result).isTrue();
+            verify(stringRedisTemplate).delete("EMAIL_VERIFY:" + email);
             verify(stringRedisTemplate).delete("EMAIL_VERIFY_FAIL:" + email);
         }
 
@@ -99,7 +100,7 @@ class EmailServiceTest {
 
             given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
             given(valueOperations.get("EMAIL_VERIFY_FAIL:" + email)).willReturn(null);
-            given(valueOperations.getAndDelete("EMAIL_VERIFY:" + email)).willReturn(null);
+            given(valueOperations.get("EMAIL_VERIFY:" + email)).willReturn(null);
             given(valueOperations.increment("EMAIL_VERIFY_FAIL:" + email)).willReturn(1L);
 
             boolean result = emailService.verifyCode(email, code);
@@ -117,7 +118,7 @@ class EmailServiceTest {
 
             given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
             given(valueOperations.get("EMAIL_VERIFY_FAIL:" + email)).willReturn(null);
-            given(valueOperations.getAndDelete("EMAIL_VERIFY:" + email)).willReturn(savedCode);
+            given(valueOperations.get("EMAIL_VERIFY:" + email)).willReturn(savedCode);
             given(valueOperations.increment("EMAIL_VERIFY_FAIL:" + email)).willReturn(1L);
 
             boolean result = emailService.verifyCode(email, inputCode);

@@ -8,7 +8,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import site.yesaido.user_server.domain.user.controller.UserController;
 import site.yesaido.user_server.domain.user.dto.UserSummaryResponse;
 import site.yesaido.user_server.domain.user.dto.search.UserSearchResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignResponse;
@@ -16,10 +15,12 @@ import site.yesaido.user_server.domain.user.dto.signup.UserSignUpRequest;
 import site.yesaido.user_server.domain.user.entity.Role;
 import site.yesaido.user_server.domain.user.entity.UserStatus;
 import site.yesaido.user_server.domain.user.service.UserService;
+import site.yesaido.user_server.global.common.ApiResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
@@ -37,10 +38,11 @@ class UserControllerTest {
     void checkEmail_duplicated() {
         given(userService.existsEmail("test@test.com")).willReturn(true);
 
-        ResponseEntity<Boolean> response = userController.checkEmail("test@test.com");
+        ResponseEntity<ApiResponse<Boolean>> response = userController.checkEmail("test@test.com");
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isTrue();
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isTrue();
     }
 
     @Test
@@ -48,9 +50,10 @@ class UserControllerTest {
     void checkEmail_notDuplicated() {
         given(userService.existsEmail("new@test.com")).willReturn(false);
 
-        ResponseEntity<Boolean> response = userController.checkEmail("new@test.com");
+        ResponseEntity<ApiResponse<Boolean>> response = userController.checkEmail("new@test.com");
 
-        assertThat(response.getBody()).isFalse();
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isFalse();
     }
 
     @Test
@@ -58,10 +61,11 @@ class UserControllerTest {
     void checkNickname_duplicated() {
         given(userService.existNickname("닉네임")).willReturn(true);
 
-        ResponseEntity<Boolean> response = userController.checkNickname("닉네임");
+        ResponseEntity<ApiResponse<Boolean>> response = userController.checkNickname("닉네임");
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isTrue();
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isTrue();
     }
 
     @Test
@@ -69,9 +73,10 @@ class UserControllerTest {
     void checkNickname_notDuplicated() {
         given(userService.existNickname("새닉네임")).willReturn(false);
 
-        ResponseEntity<Boolean> response = userController.checkNickname("새닉네임");
+        ResponseEntity<ApiResponse<Boolean>> response = userController.checkNickname("새닉네임");
 
-        assertThat(response.getBody()).isFalse();
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isFalse();
     }
 
     @Test
@@ -95,12 +100,12 @@ class UserControllerTest {
 
         given(userService.signUp(request)).willReturn(expected);
 
-        ResponseEntity<UserSignResponse> response = userController.signUp(request);
+        ResponseEntity<ApiResponse<UserSignResponse>> response = userController.signUp(request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getEmail()).isEqualTo("test@test.com");
-        assertThat(response.getBody().getNickName()).isEqualTo("닉네임");
+        assertThat(response.getBody().data().getEmail()).isEqualTo("test@test.com");
+        assertThat(response.getBody().data().getNickName()).isEqualTo("닉네임");
     }
 
     @Test
@@ -113,7 +118,7 @@ class UserControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).hasSize(1);
-        assertThat(response.getBody().get(0).nickname()).isEqualTo("닉네임");
+        assertThat(response.getBody().getFirst().nickname()).isEqualTo("닉네임");
     }
 
     @Test
