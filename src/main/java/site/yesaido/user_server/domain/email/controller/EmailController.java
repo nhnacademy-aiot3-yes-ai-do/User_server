@@ -7,14 +7,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ServerWebExchange;
 import site.yesaido.user_server.domain.email.dto.EmailSendRequest;
 import site.yesaido.user_server.domain.email.dto.EmailVerifyRequest;
 import site.yesaido.user_server.domain.email.service.EmailService;
 import site.yesaido.user_server.global.common.ApiResponse;
 
 @RestController
-@RequestMapping("/auth/email")
+@RequestMapping("/api/auth/email")
 @RequiredArgsConstructor
 public class EmailController {
     private final EmailService emailService;
