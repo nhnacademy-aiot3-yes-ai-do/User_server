@@ -21,12 +21,14 @@ public class EmailController {
     @PostMapping("/send")
     public ResponseEntity<ApiResponse<Void>> sendEmail(@Valid @RequestBody EmailSendRequest request) {
         emailService.sendVerificationEmail(request.getEmail());
-        return ResponseEntity.ok(ApiResponse.success("인증번호가 발송되었습니다."));
+        ApiResponse<Void> response = ApiResponse.ok("인증번호가 발송되었습니다.");
+        return ResponseEntity.status(response.httpStatus()).body(response);
     }
 
     @PostMapping("/verify")
     public ResponseEntity<ApiResponse<Boolean>> verifyEmail(@Valid @RequestBody EmailVerifyRequest request) {
         boolean verifyCode = emailService.verifyCode(request.getEmail(), request.getCode());
-        return ResponseEntity.ok(ApiResponse.success("인증번호 검증 결과입니다.", verifyCode));
+        ApiResponse<Boolean> response = ApiResponse.ok("인증 검증 결과입니다.", verifyCode);
+        return ResponseEntity.status(response.httpStatus()).body(response);
     }
 }

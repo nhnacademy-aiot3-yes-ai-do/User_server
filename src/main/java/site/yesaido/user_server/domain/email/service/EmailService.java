@@ -20,10 +20,10 @@ public class EmailService {
     private final StringRedisTemplate stringRedisTemplate;
 
     private static final String CODE_PREFIX = "EMAIL_VERIFY:"; // 이메일당 6자리 인증번호 저장용 (수명 : 5분)
-    private static final String RESEND_WAIT_PREFIX = "EMAIL_RESEND_WAIT:"; // 연속 클릭 방지용 (수명 : 60초)
+    private static final String RESEND_WAIT_PREFIX = "EMAIL_RESEND_WAIT:"; // 연속 클릭 방지용 (수명 : 30초)
     private static final String VERIFY_FAIL_PREFIX = "EMAIL_VERIFY_FAIL:"; // 인증번호 틀린 횟수 카운트용 (수명 : 5분)
 
-    private static final long RESEND_WAIT_SECONDS = 60;
+    private static final long RESEND_WAIT_SECONDS = 30;
     private static final long MAX_VERIFY_FAIL_COUNT = 5;
     private static final long VERIFY_FAIL_WINDOW_MINUTES = 5;
 
@@ -33,7 +33,7 @@ public class EmailService {
 
     public void sendVerificationEmail(String toEmail){
         if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(getCooldownKey(toEmail)))) {
-            throw new TooManyRequestException("잠시 후 다시 시도해주세요. (60초)");
+            throw new TooManyRequestException("잠시 후 다시 시도해주세요. (30초)");
         }
 
         String authCode = String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
@@ -48,6 +48,7 @@ public class EmailService {
 
         stringRedisTemplate.opsForValue().set(getCodeKey(toEmail), authCode, 5, TimeUnit.MINUTES);
         stringRedisTemplate.opsForValue().set(getCooldownKey(toEmail), "1", RESEND_WAIT_SECONDS, TimeUnit.SECONDS);
+        stringRedisTemplate.delete(getFailCountKey(toEmail));
     }
 
     public boolean verifyCode(String email, String inputCode){
@@ -57,7 +58,7 @@ public class EmailService {
             throw new TooManyRequestException("인증 시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.");
         }
 
-        String savedCode = stringRedisTemplate.opsForValue().getAndDelete(getCodeKey(email));
+        String savedCode = stringRedisTemplate.opsForValue().get(getCodeKey(email));
 
         if(savedCode == null || !savedCode.equals(inputCode)){
             Long newFailCount = stringRedisTemplate.opsForValue().increment(getFailCountKey(email));
@@ -67,6 +68,7 @@ public class EmailService {
             return false;
         }
 
+        stringRedisTemplate.delete(getCodeKey(email));
         stringRedisTemplate.delete(getFailCountKey(email));
         return true;
     }

@@ -1,32 +1,35 @@
 package site.yesaido.user_server.global.common;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 
-@Getter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ApiResponse<T> {
-    private int status;
-    private String message;
-    private T data;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.springframework.http.HttpStatus;
 
-    public static <T> ApiResponse<T> success(String message, T data){
-        return ApiResponse.<T>builder()
-                .status(200)
-                .message(message)
-                .data(data)
-                .build();
+public record ApiResponse<T>(
+        @JsonIgnore
+        HttpStatus httpStatus,
+        boolean success,
+        String message,
+        T data
+){
+    // 1. 200 OK 성공 응답 (데이터 포함)
+    public static <T> ApiResponse<T> ok(String message, T data){
+        return new ApiResponse<>(HttpStatus.OK, true, message, data);
     }
 
-    public static <T> ApiResponse<T> success(String message){
-        return ApiResponse.<T>builder()
-                .status(200)
-                .message(message)
-                .data(null)
-                .build();
+    // 2. 200 OK 성공 응답 (데이터 없음)
+    public static <T> ApiResponse<T> ok(String message){
+        return new ApiResponse<>(HttpStatus.OK, true, message, null);
     }
+
+    // 3. 201 CREATED 생성 성공 응답 (회원가입 완료 시)
+    public static <T> ApiResponse<T> created(String message, T data){
+        return new ApiResponse<>(HttpStatus.CREATED, true, message, data);
+    }
+
+    // 4. 실패/에러 응답 (상태코드 + 에러 메시지)
+    public static <T> ApiResponse<T> fail(HttpStatus status, String message){
+        return new ApiResponse<>(status, false, message, null);
+    }
+
+
 }
