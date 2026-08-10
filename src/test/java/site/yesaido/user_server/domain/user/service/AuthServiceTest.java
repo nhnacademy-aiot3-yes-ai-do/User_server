@@ -10,16 +10,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.util.ReflectionTestUtils;
 import site.yesaido.user_server.domain.user.dto.login.LoginRequest;
 import site.yesaido.user_server.domain.user.dto.token.TokenResponse;
 import site.yesaido.user_server.domain.user.entity.Role;
 import site.yesaido.user_server.domain.user.entity.User;
 import site.yesaido.user_server.domain.user.entity.UserStatus;
-import site.yesaido.user_server.domain.user.exception.AlreadyWithdrawnException;
-import site.yesaido.user_server.domain.user.exception.InvalidPasswordException;
-import site.yesaido.user_server.domain.user.exception.InvalidTokenException;
-import site.yesaido.user_server.domain.user.exception.UserNotFoundException;
+import site.yesaido.user_server.domain.user.exception.*;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
 import site.yesaido.user_server.global.jwt.JwtTokenProvider;
 
@@ -58,11 +54,11 @@ class AuthServiceTest {
         @Test
         @DisplayName("성공 : 이메일과 비밀번호가 올바르면 토큰 보따리로 반환")
         void success_login(){
-            LoginRequest request = createLoginRequest("test@naver.com", "nhn123!");
-            User user = createUser(1L, request.getEmail(), request.getPassword());
+            LoginRequest request = new LoginRequest("test@naver.com", "nhn123!");
+            User user = createUser(1L, request.email(), request.password());
 
-            given(userRepository.findByEmail(request.getEmail())).willReturn(Optional.of(user));
-            given(passwordEncoder.matches(request.getPassword(), user.getPassword())).willReturn(true);
+            given(userRepository.findByEmail(request.email())).willReturn(Optional.of(user));
+            given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(true);
             given(jwtTokenProvider.createAccessToken(anyLong(), any())).willReturn("mockAccessToken");
             given(jwtTokenProvider.createRefreshToken(anyLong())).willReturn("mockRefreshToken");
             given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
@@ -78,8 +74,8 @@ class AuthServiceTest {
         @Test
         @DisplayName("실패 : 존재하지 않는 이메일로 로그인 시 예외가 발생")
         void login_userNotFound(){
-            LoginRequest request = createLoginRequest("test@naver.com", "nhn12345!");
-            given(userRepository.findByEmail(request.getEmail())).willReturn(Optional.empty());
+            LoginRequest request = new LoginRequest("test@naver.com", "nhn12345!");
+            given(userRepository.findByEmail(request.email())).willReturn(Optional.empty());
 
             assertThrows(UserNotFoundException.class, ()-> authService.login(request));
         }
@@ -87,19 +83,33 @@ class AuthServiceTest {
         @Test
         @DisplayName("실패 : 비밀번호가 올바르지 않아 예외 발생")
         void login_invalidPassword(){
-            LoginRequest request = createLoginRequest("test@naver.com", "nhn12345!");
+            LoginRequest request = new LoginRequest("test@naver.com", "nhn12345!");
             User user = createUser(1L, "test@naver.com", "123!encodedPassword");
 
-            given(userRepository.findByEmail(request.getEmail())).willReturn(Optional.of(user));
-            given(passwordEncoder.matches(request.getPassword(), user.getPassword())).willReturn(false);
+            given(userRepository.findByEmail(request.email())).willReturn(Optional.of(user));
+            given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(false);
 
             assertThrows(InvalidPasswordException.class, ()-> authService.login(request));
         }
 
         @Test
+        @DisplayName("실패 : 휴면 회원이 로그인 시도 시 DormantUserException 예외 발생")
+        void login_dormantUser_failed(){
+            LoginRequest request = new LoginRequest("dormant@test.com", "password123@");
+            User dormantUser = User.builder()
+                    .email("dormant@test.com")
+                    .password("encodedPassword")
+                    .status(UserStatus.DORMANT)
+                    .build();
+            given(userRepository.findByEmail("dormant@test.com")).willReturn(Optional.of(dormantUser));
+
+            assertThrows(DormantUserException.class, ()-> authService.login(request));
+        }
+
+        @Test
         @DisplayName("실패 : 탈퇴한 사용자로 로그인 시 예외 발생")
         void login_alreadyWithdrawn(){
-            LoginRequest request = createLoginRequest("test@naver.com", "nhn12345!");
+            LoginRequest request = new LoginRequest("test@naver.com", "nhn12345!");
             User withdrawnUser = User.builder()
                     .id(1L)
                     .email("test@naver.com")
@@ -107,7 +117,7 @@ class AuthServiceTest {
                     .status(UserStatus.DELETED)
                     .build();
 
-            given(userRepository.findByEmail(request.getEmail())).willReturn(Optional.of(withdrawnUser));
+            given(userRepository.findByEmail(request.email())).willReturn(Optional.of(withdrawnUser));
 
             assertThrows(AlreadyWithdrawnException.class, () -> authService.login(request));
 
@@ -177,15 +187,8 @@ class AuthServiceTest {
         }
     }
 
-    public LoginRequest createLoginRequest(String email, String password){
-        LoginRequest dto = new LoginRequest();
-        ReflectionTestUtils.setField(dto, "email", email);
-        ReflectionTestUtils.setField(dto, "password", password);
-        return dto;
-    }
-
     public User createUser(Long id, String email, String password){
-        return User.builder()
+        return  User.builder()
                 .id(id)
                 .email(email)
                 .password(password)
@@ -193,6 +196,34 @@ class AuthServiceTest {
                 .nickName("newNick")
                 .status(UserStatus.ACTIVE)
                 .build();
+    }
+
+    @Nested
+    @DisplayName("휴면 계정 테스트")
+    class DormantTest{
+        @Test
+        @DisplayName("성공 : 휴면 회원 이메일로 해제 시 상태가 ACTIVE로 전환된다")
+        void releaseDormant_success(){
+            User dormantUser = User.builder()
+                    .email("dormant@test.com")
+                    .status(UserStatus.DORMANT)
+                    .build();
+
+            given(userRepository.findByEmail("dormant@test.com")).willReturn(Optional.of(dormantUser));
+
+            authService.releaseDormant("dormant@test.com");
+
+            assertThat(dormantUser.getStatus()).isEqualTo(UserStatus.ACTIVE);
+        }
+    }
+
+    @Test
+    @DisplayName("실패 : 존재하지 않는 이메일로 휴면 해제 시도 시 UserNotFoundException 발생")
+    void releaseDormant_UserNotFound_failure(){
+
+        given(userRepository.findByEmail("noexist@test.com")).willReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> authService.releaseDormant("noexist@test.com"));
     }
 
 

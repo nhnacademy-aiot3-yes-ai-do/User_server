@@ -9,8 +9,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import site.yesaido.user_server.domain.user.entity.Role;
-import site.yesaido.user_server.domain.user.entity.User;
-import site.yesaido.user_server.domain.user.entity.UserStatus;
 
 @Getter
 @NoArgsConstructor
@@ -33,15 +31,4 @@ public class UserSignUpRequest {
     private String nickName;
 
     private Role role;
-
-    public User toEntity(String encodedPassword){
-        return User.builder()
-                .email(this.email)
-                .password(encodedPassword)
-                .nickName(this.nickName)
-                .role(this.role != null ? this.role : Role.USER)
-                .status(UserStatus.ACTIVE)
-                .emailVerified(false)
-                .build();
-    }
 }

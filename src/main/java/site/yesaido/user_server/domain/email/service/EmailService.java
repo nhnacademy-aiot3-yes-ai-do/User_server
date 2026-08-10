@@ -8,7 +8,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.stereotype.Service;
 import site.yesaido.user_server.domain.user.exception.TooManyRequestException;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -18,6 +18,7 @@ public class EmailService {
 
     private final AsyncMailSender asyncMailSender;
     private final StringRedisTemplate stringRedisTemplate;
+    private static final SecureRandom secureRandom = new SecureRandom();
 
     private static final String CODE_PREFIX = "EMAIL_VERIFY:"; // 이메일당 6자리 인증번호 저장용 (수명 : 5분)
     private static final String RESEND_WAIT_PREFIX = "EMAIL_RESEND_WAIT:"; // 연속 클릭 방지용 (수명 : 30초)
@@ -36,7 +37,7 @@ public class EmailService {
             throw new TooManyRequestException("잠시 후 다시 시도해주세요. (30초)");
         }
 
-        String authCode = String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
+        String authCode = String.format("%06d", secureRandom.nextInt(1000000));
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
