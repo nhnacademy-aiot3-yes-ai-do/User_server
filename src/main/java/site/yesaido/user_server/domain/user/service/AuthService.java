@@ -30,8 +30,7 @@ public class AuthService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UserNotFoundException("존재하지 않는 사용자입니다."));
 
-        log.info("[로그인 시도 유저 상태] User ID: {}, 이메일: {}, 현재 DB상태: {}", user.getId(), user.getEmail(), user.getStatus());
-
+        log.info("[로그인 시도] 유저 DB상태: {}", user.getStatus());
 
         if(UserStatus.DELETED.equals(user.getStatus())){
             throw new AlreadyWithdrawnException("탈퇴한 사용자입니다.");

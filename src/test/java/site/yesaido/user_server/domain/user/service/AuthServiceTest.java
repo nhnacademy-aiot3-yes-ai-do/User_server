@@ -54,7 +54,7 @@ class AuthServiceTest {
         @Test
         @DisplayName("성공 : 이메일과 비밀번호가 올바르면 토큰 보따리로 반환")
         void success_login(){
-            LoginRequest request = new LoginRequest("test@naver.com", "nhn123!");
+            LoginRequest request = new LoginRequest("test@naver.com", "nhn12345!");
             User user = createUser(1L, request.email(), request.password());
 
             given(userRepository.findByEmail(request.email())).willReturn(Optional.of(user));

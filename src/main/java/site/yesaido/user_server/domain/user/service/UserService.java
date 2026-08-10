@@ -88,6 +88,9 @@ public class UserService {
         }
 
         if(StringUtils.hasText(request.newPassword())){
+            if (!StringUtils.hasText(request.currentPassword())) {
+                throw new InvalidPasswordException("현재 비밀번호를 입력해 주세요.");
+            }
             if(!passwordEncoder.matches(request.currentPassword(), user.getPassword())){
                 throw new InvalidPasswordException("현재 비밀번호가 일치하지 않습니다.");
             }

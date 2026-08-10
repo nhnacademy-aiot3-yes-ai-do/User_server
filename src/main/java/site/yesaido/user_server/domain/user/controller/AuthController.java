@@ -40,7 +40,6 @@ public class AuthController {
 
     @PostMapping("/dormant/release")
     public ResponseEntity<ApiResponse<Void>> releaseDormant(@RequestParam("email") String email){
-        log.info("[백엔드 컨트롤러 수신] 휴면 해제 요청 들어옴!! - 이메일: {}", email);
         authService.releaseDormant(email);
         ApiResponse<Void> apiResponse = ApiResponse.ok("휴면 계정이 성공적으로 해제되었습니다.");
         return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);

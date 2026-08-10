@@ -24,6 +24,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.status <> :excludedStatus AND (u.nickName = :keyword OR u.email = :keyword)")
     List<User> searchActiveUsers(@Param("keyword") String keyword, @Param("excludedStatus") UserStatus excludedStatus);
 
-    @Query("SELECT u FROM User u WHERE u.status = :status AND (u.lastLoginAt < :cutoffDate OR (u.lastLoginAt IS NULL AND u.createdAt < :cutoffDate))")
+    @Query("SELECT u FROM User u WHERE u.status = :status AND (u.lastLoginAt <= :cutoffDate OR (u.lastLoginAt IS NULL AND u.createdAt <= :cutoffDate))")
     List<User> findDormantCandidates(@Param("status") UserStatus status, @Param("cutoffDate")LocalDateTime cutoffDate);
 }
