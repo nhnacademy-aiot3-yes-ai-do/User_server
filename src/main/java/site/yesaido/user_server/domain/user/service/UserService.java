@@ -6,15 +6,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import site.yesaido.user_server.domain.user.dto.UserSummaryResponse;
+import site.yesaido.user_server.domain.user.dto.profile.ProfileUpdateRequest;
+import site.yesaido.user_server.domain.user.dto.profile.UserProfileResponse;
 import site.yesaido.user_server.domain.user.dto.search.UserSearchResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignUpRequest;
 import site.yesaido.user_server.domain.user.entity.User;
 import site.yesaido.user_server.domain.user.entity.UserStatus;
-import site.yesaido.user_server.domain.user.exception.AlreadyWithdrawnException;
-import site.yesaido.user_server.domain.user.exception.EmailDuplicationException;
-import site.yesaido.user_server.domain.user.exception.NicknameDuplicationException;
-import site.yesaido.user_server.domain.user.exception.UserNotFoundException;
+import site.yesaido.user_server.domain.user.exception.*;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
 
 import java.util.Collections;
@@ -64,16 +63,42 @@ public class UserService {
         return user;
     }
 
+    public UserProfileResponse getMyProfile(Long userId){
+        User user = getUserById(userId);
+        return UserProfileResponse.from(user);
+    }
+
+    public boolean verifyPassword(Long userId, String rawPassword){
+        if(userId == null){
+            return false;
+        }
+        User user = getUserById(userId);
+        return passwordEncoder.matches(rawPassword, user.getPassword());
+    }
+
     @Transactional
-    public void updateProfile(Long userId, String newNickname){
+    public UserProfileResponse updateProfile(Long userId, ProfileUpdateRequest request){
         User user = getUserById(userId);
 
-        if(!user.getNickName().equals(newNickname) && userRepository.existsByNickName(newNickname)){
-            throw new NicknameDuplicationException("이미 사용 중인 닉네임입니다.");
+        if(StringUtils.hasText(request.nickname()) && !user.getNickName().equals(request.nickname())){
+            if(userRepository.existsByNickName(request.nickname())){
+                throw new NicknameDuplicationException("이미 사용 중인 닉네임입니다.");
+            }
+            user.updateNickname(request.nickname());
         }
 
-        user.updateNickname(newNickname);
+        if(StringUtils.hasText(request.newPassword())){
+            if (!StringUtils.hasText(request.currentPassword())) {
+                throw new InvalidPasswordException("현재 비밀번호를 입력해 주세요.");
+            }
+            if(!passwordEncoder.matches(request.currentPassword(), user.getPassword())){
+                throw new InvalidPasswordException("현재 비밀번호가 일치하지 않습니다.");
+            }
+            user.updatePassword(passwordEncoder.encode(request.newPassword()));
+        }
+        return UserProfileResponse.from(user);
     }
+
 
     @Transactional
     public void withdraw(Long userId) {

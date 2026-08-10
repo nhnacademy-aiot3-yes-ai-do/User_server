@@ -5,6 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import site.yesaido.user_server.domain.user.dto.UserSummaryResponse;
+import site.yesaido.user_server.domain.user.dto.profile.PasswordVerifyRequest;
+import site.yesaido.user_server.domain.user.dto.profile.ProfileUpdateRequest;
+import site.yesaido.user_server.domain.user.dto.profile.UserProfileResponse;
 import site.yesaido.user_server.domain.user.dto.search.UserSearchResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignUpRequest;
@@ -42,6 +45,34 @@ public class UserController {
         ApiResponse<UserSignResponse> apiResponse = ApiResponse.created("회원가입이 성공적으로 완료되었습니다.", responseDto);
         return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
     }
+
+    // 4. 프로필 조회
+    @GetMapping("/mypage")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getMyProfile(@RequestHeader("X-User-Id") Long userId){
+        UserProfileResponse response = userService.getMyProfile(userId);
+        ApiResponse<UserProfileResponse> apiResponse = ApiResponse.ok("프로필 조회 성공", response);
+        return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
+    }
+
+    // 5. 프로필 수정
+    @PostMapping("/mypage")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> updateProfile(@RequestHeader("X-User-Id") Long userId, @Valid @RequestBody ProfileUpdateRequest request){
+        UserProfileResponse response = userService.updateProfile(userId, request);
+        ApiResponse<UserProfileResponse> apiResponse = ApiResponse.ok("프로필 수정 성공", response);
+        return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
+    }
+
+    // 6. 프로필 수정 비밀번호 검증
+    @PostMapping("/verify-password")
+    public ResponseEntity<ApiResponse<Boolean>> verifyPassword(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @Valid @RequestBody PasswordVerifyRequest request){
+        boolean isValid = userService.verifyPassword(userId, request.password());
+        ApiResponse<Boolean> apiResponse = ApiResponse.ok("비밀번호 다시 확인해주세요", isValid);
+        return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
+    }
+
+
 
     // 재배 멤버 초대용: 닉네임 부분일치 또는 이메일 완전일치로 사용자 검색
     @GetMapping("/search")

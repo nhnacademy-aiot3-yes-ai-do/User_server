@@ -30,7 +30,7 @@ class AuthControllerTest {
     @Test
     @DisplayName("로그인 성공 시 200과 토큰 응답을 반환한다")
     void login_success() {
-        LoginRequest request = new LoginRequest();
+        LoginRequest request = new LoginRequest("test@test.com", "password123!");
         TokenResponse tokenResponse = TokenResponse.builder()
                 .accessToken("access-token")
                 .refreshToken("refresh-token")
