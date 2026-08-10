@@ -7,6 +7,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ServerWebExchange;
+import site.yesaido.user_server.domain.inquiry.exception.InquiryAccessDeniedException;
+import site.yesaido.user_server.domain.inquiry.exception.InquiryAnswerNotFoundException;
+import site.yesaido.user_server.domain.inquiry.exception.InquiryCategoryNotFoundException;
+import site.yesaido.user_server.domain.inquiry.exception.InquiryNotFoundException;
 import site.yesaido.user_server.domain.user.exception.*;
 
 @Slf4j
@@ -15,6 +19,16 @@ public class GlobalExceptionHandler {
     // 404
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleUserNotFoundException(UserNotFoundException e, ServerWebExchange exchange){
+        logWarnFormat(HttpStatus.NOT_FOUND, e, exchange);
+        return buildResponse(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler({
+            InquiryNotFoundException.class,
+            InquiryCategoryNotFoundException.class,
+            InquiryAnswerNotFoundException.class
+    })
+    public ResponseEntity<ErrorResponse> handleInquiryNotFoundException(Exception e, ServerWebExchange exchange){
         logWarnFormat(HttpStatus.NOT_FOUND, e, exchange);
         return buildResponse(HttpStatus.NOT_FOUND, e.getMessage());
     }
@@ -42,6 +56,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleTooManyRequestException(TooManyRequestException e, ServerWebExchange exchange) {
         logWarnFormat(HttpStatus.TOO_MANY_REQUESTS, e, exchange);
         return buildResponse(HttpStatus.TOO_MANY_REQUESTS, e.getMessage());
+    }
+
+    // 403
+    @ExceptionHandler(InquiryAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleInquiryAccessDeniedException(InquiryAccessDeniedException e, ServerWebExchange exchange){
+        logWarnFormat(HttpStatus.FORBIDDEN, e, exchange);
+        return buildResponse(HttpStatus.FORBIDDEN, e.getMessage());
     }
 
     // 500
