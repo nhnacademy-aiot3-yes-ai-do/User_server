@@ -14,6 +14,7 @@ import site.yesaido.user_server.domain.inquiry.dto.response.InquiryDetailRespons
 import site.yesaido.user_server.domain.inquiry.dto.response.InquirySummaryResponse;
 import site.yesaido.user_server.domain.inquiry.service.InquiryService;
 import site.yesaido.user_server.global.common.ApiResponse;
+import site.yesaido.user_server.global.common.PageRequestValidator;
 
 import java.util.List;
 
@@ -42,7 +43,7 @@ public class InquiryController {
     public ResponseEntity<ApiResponse<Page<InquirySummaryResponse>>> getInquiries(@RequestHeader("X-User-Id") Long userId,
                                                                                   @RequestParam(defaultValue = "0") Integer page,
                                                                                   @RequestParam(defaultValue = "20") Integer size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequestValidator.of(page, size);
         Page<InquirySummaryResponse> responses = inquiryService.getMyInquiries(userId, pageable);
         ApiResponse<Page<InquirySummaryResponse>> apiResponse = ApiResponse.ok("내 문의 목록입니다.", responses);
         return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);

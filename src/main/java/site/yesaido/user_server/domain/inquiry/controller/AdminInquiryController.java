@@ -14,6 +14,7 @@ import site.yesaido.user_server.domain.inquiry.dto.response.InquirySummaryRespon
 import site.yesaido.user_server.domain.inquiry.entity.InquiryStatus;
 import site.yesaido.user_server.domain.inquiry.service.InquiryService;
 import site.yesaido.user_server.global.common.ApiResponse;
+import site.yesaido.user_server.global.common.PageRequestValidator;
 
 @RestController
 @RequestMapping("/api/admin/inquiries")
@@ -27,7 +28,7 @@ public class AdminInquiryController {
             @RequestParam(required = false) InquiryStatus status,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "20") Integer size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequestValidator.of(page, size);
         Page<InquirySummaryResponse> responses = inquiryService.getAllInquiries(adminUserId, status, pageable);
         ApiResponse<Page<InquirySummaryResponse>> apiResponse = ApiResponse.ok("전체 문의 목록입니다.", responses);
         return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
