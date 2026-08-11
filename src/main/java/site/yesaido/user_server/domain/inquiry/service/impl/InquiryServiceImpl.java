@@ -1,6 +1,5 @@
 package site.yesaido.user_server.domain.inquiry.service.impl;
 
-import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,7 +9,6 @@ import site.yesaido.user_server.domain.inquiry.dto.request.InquiryCreateRequest;
 import site.yesaido.user_server.domain.inquiry.dto.request.InquiryMessageRequest;
 import site.yesaido.user_server.domain.inquiry.dto.response.InquiryCategoryResponse;
 import site.yesaido.user_server.domain.inquiry.dto.response.InquiryDetailResponse;
-import site.yesaido.user_server.domain.inquiry.dto.response.InquiryMessageResponse;
 import site.yesaido.user_server.domain.inquiry.dto.response.InquirySummaryResponse;
 import site.yesaido.user_server.domain.inquiry.entity.Inquiry;
 import site.yesaido.user_server.domain.inquiry.entity.InquiryAnswer;
@@ -49,20 +47,20 @@ public class InquiryServiceImpl implements InquiryService {
 
     @Override
     @Transactional
-    public InquiryDetailResponse createInquiry(Long userId, InquiryCreateRequest inquiryCreateRequest) {
-        InquiryCategory category = inquiryCategoryRepository.findById(inquiryCreateRequest.getCategoryId())
+    public InquiryDetailResponse createInquiry(Long userId, InquiryCreateRequest request) {
+        InquiryCategory category = inquiryCategoryRepository.findById(request.getCategoryId())
                 .orElseThrow(InquiryCategoryNotFoundException::new);
 
         Inquiry inquiry = inquiryRepository.save(Inquiry.builder()
                 .userId(userId)
                 .category(category)
-                .title(inquiryCreateRequest.getTitle())
+                .title(request.getTitle())
+                .cultivationId(request.getCultivationId())
                 .build());
 
-        InquiryAnswer rootMessage = InquiryAnswer.builder()
-                .inquiry(inquiry)
-                .content(inquiryCreateRequest.getContent())
-                .build();
+        InquiryAnswer rootMessage = inquiryAnswerRepository.save(
+                InquiryAnswer.createRoot(inquiry, request.getContent())
+        );
 
         return InquiryDetailResponse.of(inquiry, List.of(rootMessage));
     }
@@ -89,11 +87,7 @@ public class InquiryServiceImpl implements InquiryService {
         InquiryAnswer latest = inquiryAnswerRepository.findTopByInquiryIdOrderByCreatedAtDesc(inquiryId)
                 .orElseThrow(InquiryAnswerNotFoundException::new);
 
-        inquiryAnswerRepository.save(InquiryAnswer.builder()
-                .inquiry(inquiry)
-                .content(request.getContent())
-                .pre(latest)
-                .build());
+        inquiryAnswerRepository.save(InquiryAnswer.createFollowUp(inquiry, latest, request.getContent()));
 
         inquiry.markPending();
 
@@ -108,7 +102,7 @@ public class InquiryServiceImpl implements InquiryService {
 
         Page<Inquiry> page = statusFilter != null
                 ? inquiryRepository.findAllByStatus(statusFilter, pageable)
-                :inquiryRepository.findAll(pageable);
+                : inquiryRepository.findAll(pageable);
 
         return page.map(InquirySummaryResponse::from);
     }

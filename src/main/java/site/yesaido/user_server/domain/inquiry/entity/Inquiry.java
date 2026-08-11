@@ -23,6 +23,9 @@ public class Inquiry {
     @Column(name = "title", length = 200, nullable = false)
     private String title;
 
+    @Column(name = "cultivation_id")
+    private Long cultivationId;
+
     @Column(name = "status", nullable = false, length = 100)
     @Enumerated(EnumType.STRING)
     @Builder.Default

@@ -45,7 +45,7 @@ public class AuthService {
         }
 
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), user.getRole());
 
         stringRedisTemplate.opsForValue().set(
                 "RT:" + user.getId(),
@@ -59,6 +59,7 @@ public class AuthService {
         return TokenResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .role(user.getRole())
                 .build();
 
     }
@@ -80,13 +81,14 @@ public class AuthService {
                 .orElseThrow(() -> new UserNotFoundException("유저를 찾을 수 없습니다."));
 
         String newAccessToken = jwtTokenProvider.createAccessToken(userId, user.getRole());
-        String newRefreshToken = jwtTokenProvider.createRefreshToken(userId);
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(userId, user.getRole());
 
         stringRedisTemplate.opsForValue().set("RT:" + user.getId(), newRefreshToken, 14, TimeUnit.DAYS);
 
         return TokenResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
+                .role(user.getRole())
                 .build();
     }
 

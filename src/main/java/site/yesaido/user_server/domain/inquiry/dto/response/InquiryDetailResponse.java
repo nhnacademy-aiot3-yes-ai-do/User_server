@@ -15,6 +15,7 @@ public record InquiryDetailResponse(
         String title,
         InquiryStatus status,
         LocalDateTime createdAt,
+        Long cultivationId,
         List<InquiryMessageResponse> messages
 ) {
     public static InquiryDetailResponse of(Inquiry inquiry, List<InquiryAnswer> answer) {
@@ -26,6 +27,7 @@ public record InquiryDetailResponse(
                 inquiry.getTitle(),
                 inquiry.getStatus(),
                 inquiry.getCreatedAt(),
+                inquiry.getCultivationId(),
                 answer.stream().map(InquiryMessageResponse::from).toList()
         );
     }

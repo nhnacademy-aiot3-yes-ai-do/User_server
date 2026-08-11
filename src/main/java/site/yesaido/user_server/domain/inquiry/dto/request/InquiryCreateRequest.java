@@ -18,4 +18,6 @@ public class InquiryCreateRequest {
 
     @NotBlank(message = "문의 내역은 필수 입력 항목입니다.")
     private String content;
+
+    private Long cultivationId;
 }
