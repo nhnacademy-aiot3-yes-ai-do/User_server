@@ -10,13 +10,9 @@ import site.yesaido.user_server.domain.user.dto.login.LoginRequest;
 import site.yesaido.user_server.domain.user.dto.token.TokenResponse;
 import site.yesaido.user_server.domain.user.entity.User;
 import site.yesaido.user_server.domain.user.entity.UserStatus;
-import site.yesaido.user_server.domain.user.exception.AlreadyWithdrawnException;
-import site.yesaido.user_server.domain.user.exception.InvalidPasswordException;
-import site.yesaido.user_server.domain.user.exception.InvalidTokenException;
-import site.yesaido.user_server.domain.user.exception.UserNotFoundException;
+import site.yesaido.user_server.domain.user.exception.*;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
 import site.yesaido.user_server.global.jwt.JwtTokenProvider;
-
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -31,14 +27,20 @@ public class AuthService {
 
     @Transactional
     public TokenResponse login(LoginRequest request){
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UserNotFoundException("존재하지 않는 사용자입니다."));
+
+        log.info("[로그인 시도] 유저 DB상태: {}", user.getStatus());
 
         if(UserStatus.DELETED.equals(user.getStatus())){
             throw new AlreadyWithdrawnException("탈퇴한 사용자입니다.");
         }
 
-        if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
+        if(UserStatus.DORMANT.equals(user.getStatus())){
+            throw new DormantUserException("휴면 계정입니다. 이메일 인증을 진행해 주세요.");
+        }
+
+        if(!passwordEncoder.matches(request.password(), user.getPassword())){
             throw new InvalidPasswordException();
         }
 
@@ -93,7 +95,13 @@ public class AuthService {
         stringRedisTemplate.delete("RT:" + userId);
     }
 
+    @Transactional(readOnly = false)
+    public void releaseDormant(String email){
+        User user = userRepository.findByEmail(email.trim())
+                .orElseThrow(() -> new UserNotFoundException("존재하지 않는 사용자입니다."));
 
-
+        user.activate();
+        userRepository.saveAndFlush(user);
+    }
 
 }

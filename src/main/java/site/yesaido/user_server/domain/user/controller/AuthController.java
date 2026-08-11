@@ -38,4 +38,13 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/dormant/release")
+    public ResponseEntity<ApiResponse<Void>> releaseDormant(@RequestParam("email") String email){
+        authService.releaseDormant(email);
+        ApiResponse<Void> apiResponse = ApiResponse.ok("휴면 계정이 성공적으로 해제되었습니다.");
+        return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
+    }
+
+
+
 }

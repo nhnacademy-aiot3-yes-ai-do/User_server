@@ -9,6 +9,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import site.yesaido.user_server.domain.user.dto.UserSummaryResponse;
+import site.yesaido.user_server.domain.user.dto.profile.ProfileUpdateRequest;
+import site.yesaido.user_server.domain.user.dto.profile.UserProfileResponse;
 import site.yesaido.user_server.domain.user.dto.search.UserSearchResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignUpRequest;
@@ -156,7 +158,26 @@ class UserServiceTest {
 
     @Nested
     @DisplayName("프로필 수정 테스트 그룹")
-    class updateProfileTest{
+    class ProfileTest{
+        @Test
+        @DisplayName("성공 : 내 프로필 정상 조회")
+        void getMyProfile_success(){
+            User user = User.builder()
+                    .id(1L)
+                    .email("test@test.com")
+                    .nickName("oldNick")
+                    .role(Role.USER)
+                    .status(UserStatus.ACTIVE)
+                    .build();
+
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+
+            UserProfileResponse response = userService.getMyProfile(1L);
+
+            assertThat(response).isNotNull();
+            assertThat(response.nickname()).isEqualTo("oldNick");
+        }
+
         @Test
         @DisplayName("닉네임 변경 성공")
         void updateNickname_success(){
@@ -164,12 +185,13 @@ class UserServiceTest {
                     .id(1L)
                     .nickName("oldNick")
                     .build();
-            String newNick = "newNick";
+
+            ProfileUpdateRequest request = new ProfileUpdateRequest("newNick", null, null);
 
             given(userRepository.findById(1L)).willReturn(Optional.of(updateUser));
-            given(userRepository.existsByNickName(newNick)).willReturn(false);
+            given(userRepository.existsByNickName("newNick")).willReturn(false);
 
-            userService.updateProfile(1L, newNick);
+            userService.updateProfile(1L, request);
 
             assertThat(updateUser.getNickName()).isEqualTo("newNick");
 
@@ -182,12 +204,46 @@ class UserServiceTest {
                     .id(1L)
                     .nickName("oldNick")
                     .build();
-            String newNick = "newNick";
+
+            ProfileUpdateRequest request = new ProfileUpdateRequest("newNick", null, null);
+
 
             given(userRepository.findById(1L)).willReturn(Optional.of(updateUser));
-            given(userRepository.existsByNickName(newNick)).willReturn(true);
+            given(userRepository.existsByNickName("newNick")).willReturn(true);
 
-            assertThrows(NicknameDuplicationException.class, () -> userService.updateProfile(1L, newNick));
+            assertThrows(NicknameDuplicationException.class, () -> userService.updateProfile(1L, request));
+        }
+
+        @Test
+        @DisplayName("성공 : 입력한 비밀번호가 DB와 일치하면 true 반환")
+        void verifyPassword_success(){
+            User user = User.builder()
+                    .id(1L)
+                    .password("encodedPassword")
+                    .build();
+
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(passwordEncoder.matches("rawPass", "encodedPassword")).willReturn(true);
+
+            boolean result = userService.verifyPassword(1L, "rawPass");
+
+            assertThat(result).isTrue();
+        }
+
+        @Test
+        @DisplayName("실패 : 입력한 비밀번호가 DB와 불일치하면 false 반환")
+        void verifyPassword_failure(){
+            User user = User.builder()
+                    .id(1L)
+                    .password("encodedPassword")
+                    .build();
+
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(passwordEncoder.matches("rawPass", "encodedPassword")).willReturn(false);
+
+            boolean result = userService.verifyPassword(1L, "rawPass");
+
+            assertThat(result).isFalse();
         }
     }
 
@@ -276,7 +332,7 @@ class UserServiceTest {
         List<UserSearchResponse> result = userService.searchUsers("닉네임");
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).nickname()).isEqualTo("닉네임");
+        assertThat(result.getFirst().nickname()).isEqualTo("닉네임");
     }
 
     @Test
@@ -290,8 +346,10 @@ class UserServiceTest {
         List<UserSummaryResponse> result = userService.getUsers(List.of(1L, 2L));
 
         assertThat(result).hasSize(2);
-        assertThat(result.get(0).nickname()).isEqualTo("닉네임1");
+        assertThat(result.getFirst().nickname()).isEqualTo("닉네임1");
     }
+
+
 }
 
 

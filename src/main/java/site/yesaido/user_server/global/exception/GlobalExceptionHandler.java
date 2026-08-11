@@ -38,7 +38,8 @@ public class GlobalExceptionHandler {
             NicknameDuplicationException.class,
             EmailDuplicationException.class,
             InvalidPasswordException.class,
-            AlreadyWithdrawnException.class
+            AlreadyWithdrawnException.class,
+            DormantUserException.class
     })
     public ResponseEntity<ErrorResponse> handleBadRequestException(RuntimeException e, ServerWebExchange exchange){
         logWarnFormat(HttpStatus.BAD_REQUEST, e, exchange);

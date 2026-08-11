@@ -82,6 +82,10 @@ public class User {
         this.lastLoginAt = LocalDateTime.now();
     }
 
+    public void updatePassword(String password){
+        this.password = password;
+    }
+
     public void changeToDormant(){
         this.status = UserStatus.DORMANT;
     }
