@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
     void createRefreshToken_success(){
         Long userId = 1L;
 
-        String refreshToken = jwtTokenProvider.createRefreshToken(userId);
+        String refreshToken = jwtTokenProvider.createRefreshToken(userId, Role.USER);
 
         assertThat(refreshToken).isNotNull();
         assertThat(jwtTokenProvider.validateToken(refreshToken)).isTrue();
