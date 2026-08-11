@@ -16,9 +16,10 @@ public record InquiryDetailResponse(
         InquiryStatus status,
         LocalDateTime createdAt,
         Long cultivationId,
+        String cultivationName,
         List<InquiryMessageResponse> messages
 ) {
-    public static InquiryDetailResponse of(Inquiry inquiry, List<InquiryAnswer> answer) {
+    public static InquiryDetailResponse of(Inquiry inquiry, List<InquiryAnswer> answer, String cultivationName) {
         return new InquiryDetailResponse(
                 inquiry.getId(),
                 inquiry.getUserId(),
@@ -28,6 +29,7 @@ public record InquiryDetailResponse(
                 inquiry.getStatus(),
                 inquiry.getCreatedAt(),
                 inquiry.getCultivationId(),
+                cultivationName,
                 answer.stream().map(InquiryMessageResponse::from).toList()
         );
     }

@@ -1,12 +1,15 @@
 package site.yesaido.user_server.domain.inquiry.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import site.yesaido.user_server.domain.inquiry.client.CultivationClient;
 import site.yesaido.user_server.domain.inquiry.dto.request.InquiryCreateRequest;
 import site.yesaido.user_server.domain.inquiry.dto.request.InquiryMessageRequest;
+import site.yesaido.user_server.domain.inquiry.dto.response.CultivationSummaryResponse;
 import site.yesaido.user_server.domain.inquiry.dto.response.InquiryCategoryResponse;
 import site.yesaido.user_server.domain.inquiry.dto.response.InquiryDetailResponse;
 import site.yesaido.user_server.domain.inquiry.dto.response.InquirySummaryResponse;
@@ -29,6 +32,7 @@ import site.yesaido.user_server.domain.user.repository.UserRepository;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -37,6 +41,7 @@ public class InquiryServiceImpl implements InquiryService {
     private final InquiryAnswerRepository inquiryAnswerRepository;
     private final InquiryCategoryRepository inquiryCategoryRepository;
     private final UserRepository userRepository;
+    private final CultivationClient cultivationClient;
 
     @Override
     public List<InquiryCategoryResponse> getCategories() {
@@ -62,7 +67,7 @@ public class InquiryServiceImpl implements InquiryService {
                 InquiryAnswer.createRoot(inquiry, request.getContent())
         );
 
-        return InquiryDetailResponse.of(inquiry, List.of(rootMessage));
+        return InquiryDetailResponse.of(inquiry, List.of(rootMessage), resolveCultivationName(inquiry));
     }
 
     public Page<InquirySummaryResponse> getMyInquiries(Long userId, Pageable pageable) {
@@ -75,7 +80,7 @@ public class InquiryServiceImpl implements InquiryService {
         requireOwner(inquiry, userId);
 
         List<InquiryAnswer> messages = inquiryAnswerRepository.findAllByInquiryIdOrderByCreatedAtAsc(inquiryId);
-        return InquiryDetailResponse.of(inquiry, messages);
+        return InquiryDetailResponse.of(inquiry, messages, resolveCultivationName(inquiry));
     }
 
     @Override
@@ -92,7 +97,7 @@ public class InquiryServiceImpl implements InquiryService {
         inquiry.markPending();
 
         List<InquiryAnswer> messages = inquiryAnswerRepository.findAllByInquiryIdOrderByCreatedAtAsc(inquiryId);
-        return InquiryDetailResponse.of(inquiry, messages);
+        return InquiryDetailResponse.of(inquiry, messages, resolveCultivationName(inquiry));
     }
 
     // 관리자 용
@@ -113,7 +118,7 @@ public class InquiryServiceImpl implements InquiryService {
 
         Inquiry inquiry = getInquiryOrThrow(inquiryId);
         List<InquiryAnswer> messages = inquiryAnswerRepository.findAllByInquiryIdOrderByCreatedAtAsc(inquiryId);
-        return InquiryDetailResponse.of(inquiry, messages);
+        return InquiryDetailResponse.of(inquiry, messages, resolveCultivationName(inquiry));
     }
 
     @Override
@@ -130,7 +135,7 @@ public class InquiryServiceImpl implements InquiryService {
         inquiry.markResolved();
 
         List<InquiryAnswer> messages = inquiryAnswerRepository.findAllByInquiryIdOrderByCreatedAtAsc(inquiry.getId());
-        return InquiryDetailResponse.of(inquiry, messages);
+        return InquiryDetailResponse.of(inquiry, messages, resolveCultivationName(inquiry));
     }
 
     // Helper Method
@@ -151,5 +156,18 @@ public class InquiryServiceImpl implements InquiryService {
     private Inquiry getInquiryOrThrow(Long inquiryId) {
         return inquiryRepository.findById(inquiryId)
                 .orElseThrow(InquiryNotFoundException::new);
+    }
+
+    private String resolveCultivationName(Inquiry inquiry) {
+        if (inquiry.getCultivationId() == null) {
+            return null;
+        }
+        try {
+            CultivationSummaryResponse cultivation = cultivationClient.getCultivation(inquiry.getUserId(), inquiry.getCultivationId());
+            return cultivation != null ? cultivation.name() : null;
+        } catch (Exception e) {
+            log.warn("경작지 정보 조회 실패 (inquiryId={}, cultivationId={}): {}", inquiry.getId(), inquiry.getCultivationId(), e.getMessage());
+            return null;
+        }
     }
 }
