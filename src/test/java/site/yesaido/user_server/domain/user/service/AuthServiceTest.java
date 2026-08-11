@@ -60,7 +60,7 @@ class AuthServiceTest {
             given(userRepository.findByEmail(request.email())).willReturn(Optional.of(user));
             given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(true);
             given(jwtTokenProvider.createAccessToken(anyLong(), any())).willReturn("mockAccessToken");
-            given(jwtTokenProvider.createRefreshToken(anyLong())).willReturn("mockRefreshToken");
+            given(jwtTokenProvider.createRefreshToken(anyLong(), any())).willReturn("mockRefreshToken");
             given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
 
             TokenResponse response = authService.login(request);
@@ -140,7 +140,7 @@ class AuthServiceTest {
             given(valueOperations.get("RT:" + userId)).willReturn(refreshToken);
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
             given(jwtTokenProvider.createAccessToken(anyLong(), any())).willReturn("newAccessToken");
-            given(jwtTokenProvider.createRefreshToken(anyLong())).willReturn("newRefreshToken");
+            given(jwtTokenProvider.createRefreshToken(anyLong(), any())).willReturn("newRefreshToken");
 
             TokenResponse response = authService.reissue(refreshToken);
 
