@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.yesaido.user_server.domain.user.dto.login.LoginRequest;
+import site.yesaido.user_server.domain.user.dto.oauth.GoogleLoginRequest;
 import site.yesaido.user_server.domain.user.dto.token.TokenResponse;
 import site.yesaido.user_server.domain.user.entity.User;
 import site.yesaido.user_server.domain.user.entity.UserStatus;
@@ -32,36 +33,29 @@ public class AuthService {
 
         log.info("[로그인 시도] 유저 DB상태: {}", user.getStatus());
 
-        if(UserStatus.DELETED.equals(user.getStatus())){
-            throw new AlreadyWithdrawnException("탈퇴한 사용자입니다.");
-        }
-
-        if(UserStatus.DORMANT.equals(user.getStatus())){
-            throw new DormantUserException("휴면 계정입니다. 이메일 인증을 진행해 주세요.");
-        }
 
         if(!passwordEncoder.matches(request.password(), user.getPassword())){
             throw new InvalidPasswordException();
         }
 
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), user.getRole());
+        return createTokenResponse(user);
+    }
 
-        stringRedisTemplate.opsForValue().set(
-                "RT:" + user.getId(),
-                refreshToken,
-                14,
-                TimeUnit.DAYS
-        );
+    @Transactional
+    public TokenResponse loginWithGoogle(GoogleLoginRequest request){
+        String email = request.email();
+        String nickName = (request.nickName() != null && !request.nickName().isBlank())
+                ? request.nickName() + "_" + (System.currentTimeMillis() % 10000)
+                : "google_" + (System.currentTimeMillis() % 10000);
 
-        user.updateLastLoginAt();
+        User user = userRepository.findByEmail(request.email())
+                .orElseGet(() -> {
+                    log.info("[구글 신규 소셜 회원가입] 이메일: {}", email);
+                    User newUser = new User(email, nickName);
+                    return userRepository.save(newUser);
+                });
 
-        return TokenResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .role(user.getRole())
-                .build();
-
+        return createTokenResponse(user);
     }
 
     public TokenResponse reissue(String refreshToken){
@@ -88,7 +82,6 @@ public class AuthService {
         return TokenResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
-                .role(user.getRole())
                 .build();
     }
 
@@ -97,13 +90,39 @@ public class AuthService {
         stringRedisTemplate.delete("RT:" + userId);
     }
 
-    @Transactional(readOnly = false)
+    @Transactional
     public void releaseDormant(String email){
         User user = userRepository.findByEmail(email.trim())
                 .orElseThrow(() -> new UserNotFoundException("존재하지 않는 사용자입니다."));
 
         user.activate();
-        userRepository.saveAndFlush(user);
+    }
+
+    private TokenResponse createTokenResponse(User user){
+        if(UserStatus.DELETED.equals(user.getStatus())){
+            throw new AlreadyWithdrawnException("탈퇴한 사용자입니다.");
+        }
+
+        if(UserStatus.DORMANT.equals(user.getStatus())){
+            throw new DormantUserException("휴면 계정입니다. 이메일 인증을 진행해 주세요.");
+        }
+
+        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), user.getRole());
+
+        stringRedisTemplate.opsForValue().set(
+                "RT:" + user.getId(),
+                refreshToken,
+                14,
+                TimeUnit.DAYS
+        );
+
+        user.updateLastLoginAt();
+
+        return TokenResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
     }
 
 }

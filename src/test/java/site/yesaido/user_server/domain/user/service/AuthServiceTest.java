@@ -102,6 +102,7 @@ class AuthServiceTest {
                     .status(UserStatus.DORMANT)
                     .build();
             given(userRepository.findByEmail("dormant@test.com")).willReturn(Optional.of(dormantUser));
+            given(passwordEncoder.matches(request.password(), dormantUser.getPassword())).willReturn(true);
 
             assertThrows(DormantUserException.class, ()-> authService.login(request));
         }
@@ -118,6 +119,7 @@ class AuthServiceTest {
                     .build();
 
             given(userRepository.findByEmail(request.email())).willReturn(Optional.of(withdrawnUser));
+            given(passwordEncoder.matches(request.password(), withdrawnUser.getPassword())).willReturn(true);
 
             assertThrows(AlreadyWithdrawnException.class, () -> authService.login(request));
 

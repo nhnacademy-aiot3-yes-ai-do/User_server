@@ -42,8 +42,8 @@ public class EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(toEmail);
-        message.setSubject("[MushMush] 회원가입 이메일 인증번호입니다.");
-        message.setText("안녕하세요! 회원가입 인증번호는 [" + authCode + "] 입니다.\n5분 이내에 입력해 주세요.");
+        message.setSubject("[MushMush] 이메일 본인 인증번호입니다.");
+        message.setText("안녕하세요! MushMush 인증번호는 [" + authCode + "] 입니다.\n5분 이내에 입력해 주세요.");
 
         asyncMailSender.sendMailAsync(message);
 
