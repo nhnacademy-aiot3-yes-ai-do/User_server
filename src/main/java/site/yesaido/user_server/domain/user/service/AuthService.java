@@ -14,6 +14,8 @@ import site.yesaido.user_server.domain.user.entity.UserStatus;
 import site.yesaido.user_server.domain.user.exception.*;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
 import site.yesaido.user_server.global.jwt.JwtTokenProvider;
+import site.yesaido.user_server.global.oauth.GoogleTokenVerifier;
+
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -25,6 +27,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final StringRedisTemplate stringRedisTemplate;
+    private final GoogleTokenVerifier googleTokenVerifier;
 
     @Transactional
     public TokenResponse login(LoginRequest request){
@@ -43,20 +46,30 @@ public class AuthService {
 
     @Transactional
     public TokenResponse loginWithGoogle(GoogleLoginRequest request){
-        String email = request.email();
-        String nickName = (request.nickName() != null && !request.nickName().isBlank())
-                ? request.nickName() + "_" + (System.currentTimeMillis() % 10000)
-                : "google_" + (System.currentTimeMillis() % 10000);
+        String verifiedEmail = googleTokenVerifier.verifyAndGetEmail(request.idToken());
+        if (verifiedEmail == null || verifiedEmail.isBlank()) {
+            throw new InvalidTokenException("유효하지 않은 Google ID Token입니다.");
+        }
 
-        User user = userRepository.findByEmail(request.email())
+        String baseNick = (request.nickName() != null && !request.nickName().isBlank())
+                ? request.nickName().trim()
+                : "google_user";
+
+        if (baseNick.length() > 35) {
+            baseNick = baseNick.substring(0, 35);
+        }
+        String uniqueNickname = baseNick + "_" + java.util.UUID.randomUUID().toString().substring(0, 8);
+
+        User user = userRepository.findByEmail(verifiedEmail)
                 .orElseGet(() -> {
-                    log.info("[구글 신규 소셜 회원가입] 이메일: {}", email);
-                    User newUser = new User(email, nickName);
+                    log.info("[구글 신규 소셜 회원가입] 이메일: {}, 닉네임: {}", verifiedEmail, uniqueNickname);
+                    User newUser = new User(verifiedEmail, uniqueNickname);
                     return userRepository.save(newUser);
                 });
 
         return createTokenResponse(user);
     }
+
 
     public TokenResponse reissue(String refreshToken){
         if(!jwtTokenProvider.validateToken(refreshToken)){

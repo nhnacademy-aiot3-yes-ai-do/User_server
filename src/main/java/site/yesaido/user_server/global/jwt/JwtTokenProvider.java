@@ -1,5 +1,6 @@
 package site.yesaido.user_server.global.jwt;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -73,4 +74,9 @@ public class JwtTokenProvider {
         return Long.parseLong(userId);
     }
 
+    public Role getRoleFromToken(String token){
+        Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
+        String roleStr = claims.get("role", String.class);
+        return roleStr != null ? Role.valueOf(roleStr) : Role.USER;
+    }
 }
