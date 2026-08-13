@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import site.yesaido.user_server.domain.user.dto.login.LoginRequest;
+import site.yesaido.user_server.domain.user.dto.oauth.GoogleLoginRequest;
 import site.yesaido.user_server.domain.user.dto.token.ReissueRequest;
 import site.yesaido.user_server.domain.user.dto.token.TokenResponse;
 import site.yesaido.user_server.domain.user.service.AuthService;
@@ -45,6 +46,12 @@ public class AuthController {
         return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
     }
 
+    @PostMapping("/oauth2/google")
+    public ResponseEntity<ApiResponse<TokenResponse>> loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request){
+        TokenResponse response = authService.loginWithGoogle(request);
+        ApiResponse<TokenResponse> apiResponse = ApiResponse.ok("구글 소셜 로그인에 성공하였습니다.", response);
+        return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
+    }
 
 
 }
