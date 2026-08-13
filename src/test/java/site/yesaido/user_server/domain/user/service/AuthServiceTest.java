@@ -11,6 +11,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import site.yesaido.user_server.domain.user.dto.login.LoginRequest;
+import site.yesaido.user_server.domain.user.dto.oauth.GoogleLoginRequest;
 import site.yesaido.user_server.domain.user.dto.token.TokenResponse;
 import site.yesaido.user_server.domain.user.entity.Role;
 import site.yesaido.user_server.domain.user.entity.User;
@@ -18,6 +19,7 @@ import site.yesaido.user_server.domain.user.entity.UserStatus;
 import site.yesaido.user_server.domain.user.exception.*;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
 import site.yesaido.user_server.global.jwt.JwtTokenProvider;
+import site.yesaido.user_server.global.oauth.GoogleTokenVerifier;
 
 import java.util.Optional;
 
@@ -42,18 +44,21 @@ class AuthServiceTest {
     @Mock
     private ValueOperations<String, String> valueOperations;
 
-    @InjectMocks
-    private AuthService authService;
-
     @Mock
     private JwtTokenProvider jwtTokenProvider;
 
+    @Mock
+    private GoogleTokenVerifier googleTokenVerifier;
+
+    @InjectMocks
+    private AuthService authService;
+
     @Nested
     @DisplayName("로그인 기능 테스트")
-    class LoginTest{
+    class LoginTest {
         @Test
         @DisplayName("성공 : 이메일과 비밀번호가 올바르면 토큰 보따리로 반환")
-        void success_login(){
+        void success_login() {
             LoginRequest request = new LoginRequest("test@naver.com", "nhn12345!");
             User user = createUser(1L, request.email(), request.password());
 
@@ -68,33 +73,59 @@ class AuthServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.getAccessToken()).isEqualTo("mockAccessToken");
             assertThat(response.getRefreshToken()).isEqualTo("mockRefreshToken");
+        }
 
+        @Test
+        @DisplayName("성공 : Google ID Token이 유효하면 구글 소셜 로그인 성공")
+        void loginWithGoogle_success() {
+            GoogleLoginRequest request = new GoogleLoginRequest("validIdToken", "google@gmail.com", "구글유저");
+            User user = createUser(2L, "google@gmail.com", "");
+
+            given(googleTokenVerifier.verifyAndGetEmail("validIdToken")).willReturn("google@gmail.com");
+            given(userRepository.findByEmail("google@gmail.com")).willReturn(Optional.of(user));
+            given(jwtTokenProvider.createAccessToken(anyLong(), any())).willReturn("mockAccessToken");
+            given(jwtTokenProvider.createRefreshToken(anyLong(), any())).willReturn("mockRefreshToken");
+            given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
+
+            TokenResponse response = authService.loginWithGoogle(request);
+
+            assertThat(response).isNotNull();
+            assertThat(response.getAccessToken()).isEqualTo("mockAccessToken");
+        }
+
+        @Test
+        @DisplayName("실패 : Google ID Token이 유효하지 않으면 InvalidTokenException 발생")
+        void loginWithGoogle_invalidIdToken() {
+            GoogleLoginRequest request = new GoogleLoginRequest("invalidToken", "google@gmail.com", "구글유저");
+            given(googleTokenVerifier.verifyAndGetEmail("invalidToken")).willReturn(null);
+
+            assertThrows(InvalidTokenException.class, () -> authService.loginWithGoogle(request));
         }
 
         @Test
         @DisplayName("실패 : 존재하지 않는 이메일로 로그인 시 예외가 발생")
-        void login_userNotFound(){
+        void login_userNotFound() {
             LoginRequest request = new LoginRequest("test@naver.com", "nhn12345!");
             given(userRepository.findByEmail(request.email())).willReturn(Optional.empty());
 
-            assertThrows(UserNotFoundException.class, ()-> authService.login(request));
+            assertThrows(UserNotFoundException.class, () -> authService.login(request));
         }
 
         @Test
         @DisplayName("실패 : 비밀번호가 올바르지 않아 예외 발생")
-        void login_invalidPassword(){
+        void login_invalidPassword() {
             LoginRequest request = new LoginRequest("test@naver.com", "nhn12345!");
             User user = createUser(1L, "test@naver.com", "123!encodedPassword");
 
             given(userRepository.findByEmail(request.email())).willReturn(Optional.of(user));
             given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(false);
 
-            assertThrows(InvalidPasswordException.class, ()-> authService.login(request));
+            assertThrows(InvalidPasswordException.class, () -> authService.login(request));
         }
 
         @Test
         @DisplayName("실패 : 휴면 회원이 로그인 시도 시 DormantUserException 예외 발생")
-        void login_dormantUser_failed(){
+        void login_dormantUser_failed() {
             LoginRequest request = new LoginRequest("dormant@test.com", "password123@");
             User dormantUser = User.builder()
                     .email("dormant@test.com")
@@ -102,13 +133,14 @@ class AuthServiceTest {
                     .status(UserStatus.DORMANT)
                     .build();
             given(userRepository.findByEmail("dormant@test.com")).willReturn(Optional.of(dormantUser));
+            given(passwordEncoder.matches(request.password(), dormantUser.getPassword())).willReturn(true);
 
-            assertThrows(DormantUserException.class, ()-> authService.login(request));
+            assertThrows(DormantUserException.class, () -> authService.login(request));
         }
 
         @Test
         @DisplayName("실패 : 탈퇴한 사용자로 로그인 시 예외 발생")
-        void login_alreadyWithdrawn(){
+        void login_alreadyWithdrawn() {
             LoginRequest request = new LoginRequest("test@naver.com", "nhn12345!");
             User withdrawnUser = User.builder()
                     .id(1L)
@@ -118,15 +150,15 @@ class AuthServiceTest {
                     .build();
 
             given(userRepository.findByEmail(request.email())).willReturn(Optional.of(withdrawnUser));
+            given(passwordEncoder.matches(request.password(), withdrawnUser.getPassword())).willReturn(true);
 
             assertThrows(AlreadyWithdrawnException.class, () -> authService.login(request));
-
         }
     }
 
     @Nested
     @DisplayName("토큰 재발급(reissue) 기능 테스트")
-    class ReissueTest{
+    class ReissueTest {
         @Test
         @DisplayName("성공 : 유효한 RefreshToken이면 새로운 토큰 반환")
         void reissue_success() {
@@ -151,7 +183,7 @@ class AuthServiceTest {
 
         @Test
         @DisplayName("실패 : 만료되거나 유효하지 않은 RefreshToken이면 예외 발생")
-        void reissue_invalidJwtToken(){
+        void reissue_invalidJwtToken() {
             String invalidToken = "invalidToken";
             given(jwtTokenProvider.validateToken(invalidToken)).willReturn(false);
 
@@ -160,7 +192,7 @@ class AuthServiceTest {
 
         @Test
         @DisplayName("실패 : 레디스에 저장된 토큰과 다르면 예외 발생")
-        void reissue_redisMismatch(){
+        void reissue_redisMismatch() {
             String refreshToken = "validToken";
             Long userId = 1L;
 
@@ -170,25 +202,24 @@ class AuthServiceTest {
             given(valueOperations.get("RT:" + userId)).willReturn("differentTokenInRedis");
 
             assertThrows(InvalidTokenException.class, () -> authService.reissue(refreshToken));
-
         }
     }
 
     @Nested
     @DisplayName("로그아웃 기능 테스트")
-    class LogoutTest{
+    class LogoutTest {
         @Test
         @DisplayName("성공 : 로그아웃 시 레디스의 RefreshToken 키 삭제")
-        void logout_success(){
+        void logout_success() {
             Long userId = 1L;
             authService.logout(userId);
 
-            verify(stringRedisTemplate).delete("RT:"+ userId);
+            verify(stringRedisTemplate).delete("RT:" + userId);
         }
     }
 
-    public User createUser(Long id, String email, String password){
-        return  User.builder()
+    public User createUser(Long id, String email, String password) {
+        return User.builder()
                 .id(id)
                 .email(email)
                 .password(password)
@@ -200,10 +231,10 @@ class AuthServiceTest {
 
     @Nested
     @DisplayName("휴면 계정 테스트")
-    class DormantTest{
+    class DormantTest {
         @Test
         @DisplayName("성공 : 휴면 회원 이메일로 해제 시 상태가 ACTIVE로 전환된다")
-        void releaseDormant_success(){
+        void releaseDormant_success() {
             User dormantUser = User.builder()
                     .email("dormant@test.com")
                     .status(UserStatus.DORMANT)
@@ -219,12 +250,9 @@ class AuthServiceTest {
 
     @Test
     @DisplayName("실패 : 존재하지 않는 이메일로 휴면 해제 시도 시 UserNotFoundException 발생")
-    void releaseDormant_UserNotFound_failure(){
-
+    void releaseDormant_UserNotFound_failure() {
         given(userRepository.findByEmail("noexist@test.com")).willReturn(Optional.empty());
 
         assertThrows(UserNotFoundException.class, () -> authService.releaseDormant("noexist@test.com"));
     }
-
-
 }
