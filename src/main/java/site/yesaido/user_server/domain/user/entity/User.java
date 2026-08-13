@@ -70,6 +70,7 @@ public class User {
         this.email = email;
         this.password = null;
         this.nickName = nickname;
+        this.role = Role.USER;
         this.status = UserStatus.ACTIVE;
         this.emailVerified = true;
     }
