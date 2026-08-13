@@ -95,6 +95,7 @@ public class AuthService {
         return TokenResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
+                .role(user.getRole())
                 .build();
     }
 
@@ -135,6 +136,7 @@ public class AuthService {
         return TokenResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .role(user.getRole())
                 .build();
     }
 
