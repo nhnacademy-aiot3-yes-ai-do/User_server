@@ -20,6 +20,8 @@ target/
 *.ipr
 .env
 application-dev.yml
+**/application-dev2.yml
+
 
 ### NetBeans ###
 /nbproject/private/
@@ -35,4 +37,4 @@ build/
 .vscode/
 
 **/application-dev.yml
-**/application-test2.yml
+**/application-test2.yml.DS_Store
