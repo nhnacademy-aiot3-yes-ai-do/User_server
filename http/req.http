@@ -170,3 +170,15 @@ Content-Type: application/json
 ### 24. 위 추가 질문 후 문의 상세 재조회 (status=PENDING 확인)
 GET {{auth}}/api/inquiries/1
 X-User-Id: 100
+
+
+### 25. 께정 생성
+POST {{auth}}/api/users/signup
+Content-Type: application/json
+
+{
+  "email": "test2@test.com",
+  "password": "password123@",
+  "nickName": "테이스터훈",
+  "role": "USER"
+}
