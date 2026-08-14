@@ -6,6 +6,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import site.yesaido.user_server.domain.inquiry.exception.InquiryAnswerThreadMismatchException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Entity
@@ -36,6 +38,10 @@ public class InquiryAnswer {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pre_id")
     private InquiryAnswer pre;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "inquiryAnswer", fetch = FetchType.LAZY)
+    private List<InquiryPhoto> inquiryPhotos = new ArrayList<>();
 
     public void answer(String answerContent) {
         this.answerContent = answerContent;

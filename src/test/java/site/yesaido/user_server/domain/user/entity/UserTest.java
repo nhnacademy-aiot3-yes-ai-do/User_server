@@ -2,6 +2,7 @@ package site.yesaido.user_server.domain.user.entity;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import site.yesaido.user_server.domain.user.entity.en.UserStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

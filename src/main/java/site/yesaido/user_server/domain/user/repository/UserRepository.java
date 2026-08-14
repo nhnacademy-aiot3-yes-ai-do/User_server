@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import site.yesaido.user_server.domain.user.entity.User;
-import site.yesaido.user_server.domain.user.entity.UserStatus;
+import site.yesaido.user_server.domain.user.entity.en.UserStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;

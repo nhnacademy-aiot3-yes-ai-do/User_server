@@ -10,7 +10,7 @@ import site.yesaido.user_server.domain.user.dto.login.LoginRequest;
 import site.yesaido.user_server.domain.user.dto.oauth.GoogleLoginRequest;
 import site.yesaido.user_server.domain.user.dto.token.TokenResponse;
 import site.yesaido.user_server.domain.user.entity.User;
-import site.yesaido.user_server.domain.user.entity.UserStatus;
+import site.yesaido.user_server.domain.user.entity.en.UserStatus;
 import site.yesaido.user_server.domain.user.exception.*;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
 import site.yesaido.user_server.global.jwt.JwtTokenProvider;

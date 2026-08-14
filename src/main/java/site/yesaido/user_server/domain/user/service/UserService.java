@@ -5,15 +5,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 import site.yesaido.user_server.domain.user.dto.UserSummaryResponse;
 import site.yesaido.user_server.domain.user.dto.profile.ProfileUpdateRequest;
 import site.yesaido.user_server.domain.user.dto.profile.UserProfileResponse;
 import site.yesaido.user_server.domain.user.dto.search.UserSearchResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignUpRequest;
+import site.yesaido.user_server.domain.user.entity.ProfileImage;
 import site.yesaido.user_server.domain.user.entity.User;
-import site.yesaido.user_server.domain.user.entity.UserStatus;
+import site.yesaido.user_server.domain.user.entity.en.UserStatus;
 import site.yesaido.user_server.domain.user.exception.*;
+import site.yesaido.user_server.domain.user.repository.ProfileImageRepository;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
 
 import java.util.Collections;
@@ -24,6 +27,8 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class UserService {
     private final UserRepository userRepository;
+    private final MinioService minioService;
+    private final ProfileImageRepository profileImageRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -99,6 +104,30 @@ public class UserService {
         return UserProfileResponse.from(user);
     }
 
+    @Transactional
+    public String uploadProfileImage(Long userId, MultipartFile file) {
+        String newObjectKey = minioService.uploadProfileImage(userId, file);
+        return saveProfileImage(userId, newObjectKey);
+    }
+
+    private String saveProfileImage(Long userId, String newObjectKey) {
+        profileImageRepository.findByUserId(userId)
+                .ifPresentOrElse(
+                        profileImage -> {
+                            String oldObjectKey = profileImage.getObjectKey();
+                            profileImage.updateObjectKey(newObjectKey);
+                            profileImageRepository.save(profileImage);
+                            minioService.deleteFile(oldObjectKey);
+                        },
+                        () -> {
+                            User user = getUserById(userId);
+                            ProfileImage profileImage = ProfileImage.create(user, newObjectKey);
+                            profileImageRepository.save(profileImage);
+                        }
+                );
+        return newObjectKey;
+    }
+
 
     @Transactional
     public void withdraw(Long userId) {
@@ -130,5 +159,7 @@ public class UserService {
                 .map(UserSummaryResponse::from)
                 .toList();
     }
+
+
 
 }

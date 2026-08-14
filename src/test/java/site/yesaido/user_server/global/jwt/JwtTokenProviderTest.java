@@ -4,7 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
-import site.yesaido.user_server.domain.user.entity.Role;
+import site.yesaido.user_server.domain.user.entity.en.Role;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
