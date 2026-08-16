@@ -7,7 +7,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import site.yesaido.user_server.domain.inquiry.exception.FileUploadException;
+import site.yesaido.user_server.domain.inquiry.exception.InvalidFileException;
 
+import javax.annotation.PostConstruct;
 import java.io.InputStream;
 import java.util.Set;
 import java.util.UUID;
@@ -55,7 +58,6 @@ public class MinioService {
         validateFileSize(file.getSize());
 
         try (InputStream inputStream = file.getInputStream()) {
-            ensureBucketExists();
 
             minioClient.putObject(
                     PutObjectArgs.builder()
@@ -69,10 +71,10 @@ public class MinioService {
             return objectName;
         } catch (Exception e) {
             log.error("이미지 업로드 실패 : {}", objectName, e);
-            throw new RuntimeException("사진 업로드에 실패했습니다.", e);
+            throw new FileUploadException("사진 업로드에 실패했습니다.");
         }
     }
-    
+
 
     public void deleteFile(String objectName){
         if(objectName == null || objectName.isBlank()){
@@ -89,6 +91,17 @@ public class MinioService {
         }catch (Exception e){
             log.error("MiniO 파일 삭제 실패 : {}", objectName, e);
             throw new RuntimeException("프로필 사진 삭제에 실패했습니다.");
+        }
+    }
+
+    public void deleteQuietly(String objectName){
+        if(objectName == null || objectName.isBlank()){
+            return;
+        }
+        try{
+            deleteFile(objectName);
+        }catch (Exception e){
+            log.warn("MiniO 파일 삭제 실패 : objectName={}", objectName, e);
         }
     }
 
@@ -110,12 +123,12 @@ public class MinioService {
 
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty() || !StringUtils.hasText(file.getOriginalFilename())) {
-            throw new IllegalArgumentException("업로드할 파일이 존재하지 않습니다.");
+            throw new InvalidFileException("업로드할 파일이 존재하지 않습니다.");
         }
 
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
-            throw new IllegalArgumentException("JPG, PNG, WEBP 이미지만 업로드할 수 있습니다.");
+            throw new InvalidFileException("JPG, PNG, WEBP 이미지만 업로드할 수 있습니다.");
         }
     }
 
@@ -125,11 +138,12 @@ public class MinioService {
         }
 
         if (fileSize > MAX_FILE_SIZE) {
-            throw new IllegalArgumentException("프로필 사진은 5MB 이하만 업로드할 수 있습니다.");
+            throw new InvalidFileException("프로필 사진은 5MB 이하만 업로드할 수 있습니다.");
         }
     }
 
-    private void ensureBucketExists(){
+    @PostConstruct
+    public void ensureBucketExists(){
         try{
             boolean exists = minioClient.bucketExists(
                     BucketExistsArgs.builder()

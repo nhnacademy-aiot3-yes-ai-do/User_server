@@ -16,10 +16,7 @@ import site.yesaido.user_server.domain.inquiry.dto.response.InquiryCategoryRespo
 import site.yesaido.user_server.domain.inquiry.dto.response.InquiryDetailResponse;
 import site.yesaido.user_server.domain.inquiry.dto.response.InquirySummaryResponse;
 import site.yesaido.user_server.domain.inquiry.entity.*;
-import site.yesaido.user_server.domain.inquiry.exception.InquiryAccessDeniedException;
-import site.yesaido.user_server.domain.inquiry.exception.InquiryAnswerNotFoundException;
-import site.yesaido.user_server.domain.inquiry.exception.InquiryCategoryNotFoundException;
-import site.yesaido.user_server.domain.inquiry.exception.InquiryNotFoundException;
+import site.yesaido.user_server.domain.inquiry.exception.*;
 import site.yesaido.user_server.domain.inquiry.repository.InquiryAnswerRepository;
 import site.yesaido.user_server.domain.inquiry.repository.InquiryCategoryRepository;
 import site.yesaido.user_server.domain.inquiry.repository.InquiryPhotoRepository;
@@ -31,6 +28,7 @@ import site.yesaido.user_server.domain.user.exception.UserNotFoundException;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
 import site.yesaido.user_server.domain.user.service.MinioService;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -38,6 +36,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class InquiryServiceImpl implements InquiryService {
+    private static final int MAX_PHOTO_COUNT = 5;
+
     private final InquiryRepository inquiryRepository;
     private final InquiryAnswerRepository inquiryAnswerRepository;
     private final InquiryCategoryRepository inquiryCategoryRepository;
@@ -191,12 +191,31 @@ public class InquiryServiceImpl implements InquiryService {
         if(files == null || files.isEmpty()){
             return;
         }
-        for(MultipartFile file : files){
-            String objectKey = minioService.uploadInquiryPhoto(inquiryAnswer.getId(), file);
 
-            InquiryPhoto inquiryPhoto = InquiryPhoto.create(inquiryAnswer, objectKey);
-
-            inquiryPhotoRepository.save(inquiryPhoto);
+        if(files.size() > MAX_PHOTO_COUNT){
+            throw new InquiryPhotoLimitExceededException("문의 사진은 최대 " + MAX_PHOTO_COUNT + "장까지만 등록할 수 있습니다.");
         }
+
+        List<String> uploadKeys = new ArrayList<>();
+
+        try{
+            for(MultipartFile file : files){
+                String objectKey = minioService.uploadInquiryPhoto(inquiryAnswer.getId(), file);
+                uploadKeys.add(objectKey);
+
+                InquiryPhoto inquiryPhoto = InquiryPhoto.create(inquiryAnswer, objectKey);
+                inquiryPhotoRepository.save(inquiryPhoto);
+            }
+        }catch (Exception e){
+            for(String key : uploadKeys){
+                try{
+                    minioService.deleteFile(key);
+                }catch (Exception deleteEx){
+                    log.error("MiniO 보상 삭제 실패 : key={}", key, deleteEx);
+                }
+            }
+            throw e;
+        }
+
     }
 }

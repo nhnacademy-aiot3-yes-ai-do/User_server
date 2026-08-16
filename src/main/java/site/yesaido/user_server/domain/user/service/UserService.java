@@ -1,9 +1,12 @@
 package site.yesaido.user_server.domain.user.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import site.yesaido.user_server.domain.user.dto.UserSummaryResponse;
@@ -21,7 +24,9 @@ import site.yesaido.user_server.domain.user.repository.UserRepository;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -106,28 +111,22 @@ public class UserService {
 
     @Transactional
     public String uploadProfileImage(Long userId, MultipartFile file) {
+        User user = getUserById(userId);
+
         String newObjectKey = minioService.uploadProfileImage(userId, file);
-        return saveProfileImage(userId, newObjectKey);
-    }
 
-    private String saveProfileImage(Long userId, String newObjectKey) {
-        profileImageRepository.findByUserId(userId)
-                .ifPresentOrElse(
-                        profileImage -> {
-                            String oldObjectKey = profileImage.getObjectKey();
-                            profileImage.updateObjectKey(newObjectKey);
-                            profileImageRepository.save(profileImage);
-                            minioService.deleteFile(oldObjectKey);
-                        },
-                        () -> {
-                            User user = getUserById(userId);
-                            ProfileImage profileImage = ProfileImage.create(user, newObjectKey);
-                            profileImageRepository.save(profileImage);
-                        }
-                );
-        return newObjectKey;
-    }
+        try{
+            String oldObjectKey = replaceProfileImage(user, newObjectKey);
 
+            registerMinioCleanUp(oldObjectKey, newObjectKey);
+
+            return newObjectKey;
+        }catch (Exception e){
+            minioService.deleteQuietly(newObjectKey);
+            throw e;
+        }
+
+    }
 
     @Transactional
     public void withdraw(Long userId) {
@@ -158,6 +157,38 @@ public class UserService {
         return userRepository.findAllById(userIds).stream()
                 .map(UserSummaryResponse::from)
                 .toList();
+    }
+
+    private String replaceProfileImage(User user, String newObjectKey){
+        return profileImageRepository.findByUserId(user.getId())
+                .map(profileImage -> {
+                    String oldObjectKey = profileImage.getObjectKey();
+                    profileImage.updateObjectKey(newObjectKey);
+                    return oldObjectKey;
+                })
+                .orElseGet(()->{
+                    ProfileImage profileImage = ProfileImage.create(user, newObjectKey);
+                    profileImageRepository.save(profileImage);
+                    return null;
+                });
+    }
+
+    private void registerMinioCleanUp(String oldObjectKey, String newObjectKey){
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() { // 커밋 확정 후 옛날 사진 안전 삭제
+                        minioService.deleteQuietly(oldObjectKey);
+                    }
+
+                    @Override
+                    public void afterCompletion(int status) { // 롤백/실패 시 새 사진 삭제
+                        if(status != TransactionSynchronization.STATUS_COMMITTED){
+                            minioService.deleteQuietly(newObjectKey);
+                        }
+                    }
+                }
+        );
     }
 
 

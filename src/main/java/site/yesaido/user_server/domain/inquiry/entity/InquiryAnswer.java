@@ -77,4 +77,8 @@ public class InquiryAnswer {
     private void validateBeforeSave() {
         validateSameInquiry(this.inquiry, this.pre);
     }
+
+    public void addInquiryPhoto(InquiryPhoto photo){
+        this.inquiryPhotos.add(photo);
+    }
 }

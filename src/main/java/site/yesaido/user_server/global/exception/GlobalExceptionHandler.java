@@ -4,12 +4,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import site.yesaido.user_server.domain.inquiry.exception.InquiryAccessDeniedException;
-import site.yesaido.user_server.domain.inquiry.exception.InquiryAnswerNotFoundException;
-import site.yesaido.user_server.domain.inquiry.exception.InquiryCategoryNotFoundException;
-import site.yesaido.user_server.domain.inquiry.exception.InquiryNotFoundException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import site.yesaido.user_server.domain.inquiry.exception.*;
 import site.yesaido.user_server.domain.user.exception.*;
 import org.springframework.validation.BindException;
 
@@ -41,11 +42,27 @@ public class GlobalExceptionHandler {
             InvalidPasswordException.class,
             AlreadyWithdrawnException.class,
             DormantUserException.class,
-            InvalidPageRequestException.class
+            InvalidPageRequestException.class,
+            InquiryAnswerThreadMismatchException.class,
+            InvalidFileException.class,
+            InquiryPhotoLimitExceededException.class,
+            IllegalArgumentException.class
     })
     public ResponseEntity<ErrorResponse> handleBadRequestException(RuntimeException e, HttpServletRequest request){
         logWarnFormat(HttpStatus.BAD_REQUEST, e, request);
         return buildResponse(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
+    // 400 Bad Request (스프링 내장 요청 파라미터/헤더 누락 오류)
+    @ExceptionHandler({
+            MissingRequestHeaderException.class,
+            MissingServletRequestParameterException.class,
+            MethodArgumentTypeMismatchException.class,
+            MaxUploadSizeExceededException.class
+    })
+    public ResponseEntity<ErrorResponse> handleSpringBadRequestException(Exception e, HttpServletRequest request){
+        logWarnFormat(HttpStatus.BAD_REQUEST, e, request);
+        return buildResponse(HttpStatus.BAD_REQUEST, "잘못된 요청 형식 또는 필수 파라미터/헤더가 누락되었습니다.");
     }
 
     // 401

@@ -33,6 +33,11 @@ public class InquiryPhoto {
         inquiryPhoto.objectKey = objectKey;
         inquiryPhoto.storageType = "MINIO";
 
+        if(inquiryAnswer != null){
+            inquiryAnswer.addInquiryPhoto(inquiryPhoto);
+        }
+
         return inquiryPhoto;
     }
+
 }
