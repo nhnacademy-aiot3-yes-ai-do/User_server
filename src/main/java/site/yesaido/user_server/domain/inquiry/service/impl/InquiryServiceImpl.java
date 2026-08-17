@@ -74,7 +74,7 @@ public class InquiryServiceImpl implements InquiryService {
 
         saveInquiryPhotos(rootMessage, files);
 
-        return InquiryDetailResponse.of(inquiry, List.of(rootMessage), resolveCultivationName(inquiry));
+        return InquiryDetailResponse.of(inquiry, List.of(rootMessage), resolveCultivationName(inquiry), resolveUserNickname(userId));
     }
 
     public Page<InquirySummaryResponse> getMyInquiries(Long userId, Pageable pageable) {
