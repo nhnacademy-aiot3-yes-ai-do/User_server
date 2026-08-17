@@ -8,15 +8,17 @@ import java.time.LocalDateTime;
 public record InquirySummaryResponse(
         Long id,
         Long userId,
+        String userNickname,
         String categoryName,
         String title,
         InquiryStatus status,
         LocalDateTime createdAt
 ) {
-    public static InquirySummaryResponse from(Inquiry inquiry) {
+    public static InquirySummaryResponse from(Inquiry inquiry, String userNickname) {
         return new InquirySummaryResponse(
                 inquiry.getId(),
                 inquiry.getUserId(),
+                userNickname,
                 inquiry.getCategory().getCategoryName(),
                 inquiry.getTitle(),
                 inquiry.getStatus(),

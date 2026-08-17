@@ -10,6 +10,7 @@ import java.util.List;
 public record InquiryDetailResponse(
         Long id,
         Long userId,
+        String userNickname,
         Long categoryId,
         String categoryName,
         String title,
@@ -19,10 +20,11 @@ public record InquiryDetailResponse(
         String cultivationName,
         List<InquiryMessageResponse> messages
 ) {
-    public static InquiryDetailResponse of(Inquiry inquiry, List<InquiryAnswer> answer, String cultivationName) {
+    public static InquiryDetailResponse of(Inquiry inquiry, List<InquiryAnswer> answer, String cultivationName, String userNickname) {
         return new InquiryDetailResponse(
                 inquiry.getId(),
                 inquiry.getUserId(),
+                userNickname,
                 inquiry.getCategory().getId(),
                 inquiry.getCategory().getCategoryName(),
                 inquiry.getTitle(),

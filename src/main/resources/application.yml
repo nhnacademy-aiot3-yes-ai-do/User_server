@@ -8,6 +8,10 @@ spring:
     kubernetes:
       discovery:
         enabled: ${K8S_DISCOVERY_ENABLED:false}
+    openfeign:
+      autoconfiguration:
+        jackson:
+          enabled: false
 
   datasource:
     url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?currentSchema=${AUTH_DB_SCHEMA}&stringtype=unspecified
