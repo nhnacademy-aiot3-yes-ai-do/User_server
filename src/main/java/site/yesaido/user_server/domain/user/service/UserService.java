@@ -1,29 +1,39 @@
 package site.yesaido.user_server.domain.user.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 import site.yesaido.user_server.domain.user.dto.UserSummaryResponse;
 import site.yesaido.user_server.domain.user.dto.profile.ProfileUpdateRequest;
 import site.yesaido.user_server.domain.user.dto.profile.UserProfileResponse;
 import site.yesaido.user_server.domain.user.dto.search.UserSearchResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignUpRequest;
+import site.yesaido.user_server.domain.user.entity.ProfileImage;
 import site.yesaido.user_server.domain.user.entity.User;
-import site.yesaido.user_server.domain.user.entity.UserStatus;
+import site.yesaido.user_server.domain.user.entity.en.UserStatus;
 import site.yesaido.user_server.domain.user.exception.*;
+import site.yesaido.user_server.domain.user.repository.ProfileImageRepository;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserService {
     private final UserRepository userRepository;
+    private final MinioService minioService;
+    private final ProfileImageRepository profileImageRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -99,6 +109,24 @@ public class UserService {
         return UserProfileResponse.from(user);
     }
 
+    @Transactional
+    public String uploadProfileImage(Long userId, MultipartFile file) {
+        User user = getUserById(userId);
+
+        String newObjectKey = minioService.uploadProfileImage(userId, file);
+
+        try{
+            String oldObjectKey = replaceProfileImage(user, newObjectKey);
+
+            registerMinioCleanUp(oldObjectKey, newObjectKey);
+
+            return newObjectKey;
+        }catch (Exception e){
+            minioService.deleteQuietly(newObjectKey);
+            throw e;
+        }
+
+    }
 
     @Transactional
     public void withdraw(Long userId) {
@@ -130,5 +158,39 @@ public class UserService {
                 .map(UserSummaryResponse::from)
                 .toList();
     }
+
+    private String replaceProfileImage(User user, String newObjectKey){
+        return profileImageRepository.findByUserId(user.getId())
+                .map(profileImage -> {
+                    String oldObjectKey = profileImage.getObjectKey();
+                    profileImage.updateObjectKey(newObjectKey);
+                    return oldObjectKey;
+                })
+                .orElseGet(()->{
+                    ProfileImage profileImage = ProfileImage.create(user, newObjectKey);
+                    profileImageRepository.save(profileImage);
+                    return null;
+                });
+    }
+
+    private void registerMinioCleanUp(String oldObjectKey, String newObjectKey){
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() { // 커밋 확정 후 옛날 사진 안전 삭제
+                        minioService.deleteQuietly(oldObjectKey);
+                    }
+
+                    @Override
+                    public void afterCompletion(int status) { // 롤백/실패 시 새 사진 삭제
+                        if(status != TransactionSynchronization.STATUS_COMMITTED){
+                            minioService.deleteQuietly(newObjectKey);
+                        }
+                    }
+                }
+        );
+    }
+
+
 
 }

@@ -1,5 +1,6 @@
 package site.yesaido.user_server.domain.inquiry.dto.request;
 
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

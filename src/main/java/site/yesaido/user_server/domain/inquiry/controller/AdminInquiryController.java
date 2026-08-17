@@ -6,7 +6,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import site.yesaido.user_server.domain.inquiry.dto.request.InquiryCategoryCreateRequest;
 import site.yesaido.user_server.domain.inquiry.dto.request.InquiryMessageRequest;
+import site.yesaido.user_server.domain.inquiry.dto.response.InquiryCategoryResponse;
 import site.yesaido.user_server.domain.inquiry.dto.response.InquiryDetailResponse;
 import site.yesaido.user_server.domain.inquiry.dto.response.InquirySummaryResponse;
 import site.yesaido.user_server.domain.inquiry.entity.InquiryStatus;
@@ -46,6 +48,14 @@ public class AdminInquiryController {
                                                                             @Valid @RequestBody InquiryMessageRequest inquiryMessageRequest) {
         InquiryDetailResponse response = inquiryService.answerMessage(adminUserId, answerId, inquiryMessageRequest);
         ApiResponse<InquiryDetailResponse> apiResponse = ApiResponse.ok("답변이 등록되었습니다.", response);
+        return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
+    }
+
+    @PostMapping("/categories")
+    public ResponseEntity<ApiResponse<InquiryCategoryResponse>> createCategory(@RequestHeader("X-User-Id") Long adminId, @Valid @RequestBody InquiryCategoryCreateRequest request){
+        InquiryCategoryResponse response = inquiryService.createCategory(adminId, request);
+        ApiResponse<InquiryCategoryResponse> apiResponse = ApiResponse.created("문의 카테고리가 등록되었습니다.", response);
+
         return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
     }
 }

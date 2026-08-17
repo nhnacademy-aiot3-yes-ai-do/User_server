@@ -20,4 +20,10 @@ public class InquiryCategory {
     public void updateCategoryName(String categoryName) {
         this.categoryName = categoryName;
     }
+
+    public static InquiryCategory create(String categoryName){
+        InquiryCategory category = new InquiryCategory();
+        category.categoryName = categoryName;
+        return category;
+    }
 }

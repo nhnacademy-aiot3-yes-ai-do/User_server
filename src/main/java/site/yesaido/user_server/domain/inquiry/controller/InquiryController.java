@@ -4,8 +4,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import site.yesaido.user_server.domain.inquiry.dto.request.InquiryCreateRequest;
 import site.yesaido.user_server.domain.inquiry.dto.request.InquiryMessageRequest;
 import site.yesaido.user_server.domain.inquiry.dto.response.InquiryCategoryResponse;
@@ -30,10 +32,11 @@ public class InquiryController {
         return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<InquiryDetailResponse>> createInquiry(@RequestHeader("X-User-Id") Long userId,
-                                                                            @Valid @RequestBody InquiryCreateRequest request) {
-        InquiryDetailResponse response = inquiryService.createInquiry(userId, request);
+                                                                            @Valid @RequestPart("request") InquiryCreateRequest request,
+                                                                            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
+        InquiryDetailResponse response = inquiryService.createInquiry(userId, request, files);
         ApiResponse<InquiryDetailResponse> apiResponse = ApiResponse.created("문의가 등록되었습니다.", response);
         return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
     }

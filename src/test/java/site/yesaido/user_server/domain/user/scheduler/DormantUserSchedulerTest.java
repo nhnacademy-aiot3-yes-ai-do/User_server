@@ -8,7 +8,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import site.yesaido.user_server.domain.user.entity.User;
-import site.yesaido.user_server.domain.user.entity.UserStatus;
+import site.yesaido.user_server.domain.user.entity.en.UserStatus;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
 
 import java.time.Clock;

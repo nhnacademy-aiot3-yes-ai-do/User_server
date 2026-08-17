@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import site.yesaido.user_server.domain.user.entity.en.Role;
+import site.yesaido.user_server.domain.user.entity.en.UserStatus;
 
 import java.time.LocalDateTime;
 
@@ -37,6 +39,7 @@ public class User {
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
 
+    @Builder.Default
     @Column(name = "email_verified", nullable = false)
     private Boolean emailVerified = false;
 

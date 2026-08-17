@@ -1,8 +1,8 @@
 package site.yesaido.user_server.domain.user.dto.profile;
 
-import site.yesaido.user_server.domain.user.entity.Role;
 import site.yesaido.user_server.domain.user.entity.User;
-import site.yesaido.user_server.domain.user.entity.UserStatus;
+import site.yesaido.user_server.domain.user.entity.en.Role;
+import site.yesaido.user_server.domain.user.entity.en.UserStatus;
 
 import java.time.LocalDateTime;
 
