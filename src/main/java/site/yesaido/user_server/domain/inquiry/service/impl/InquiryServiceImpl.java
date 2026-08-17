@@ -31,6 +31,8 @@ import site.yesaido.user_server.domain.user.exception.UserNotFoundException;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -67,12 +69,13 @@ public class InquiryServiceImpl implements InquiryService {
                 InquiryAnswer.createRoot(inquiry, request.getContent())
         );
 
-        return InquiryDetailResponse.of(inquiry, List.of(rootMessage), resolveCultivationName(inquiry));
+        return InquiryDetailResponse.of(inquiry, List.of(rootMessage), resolveCultivationName(inquiry), resolveUserNickname(userId));
     }
 
     public Page<InquirySummaryResponse> getMyInquiries(Long userId, Pageable pageable) {
+        String nickname = resolveUserNickname(userId);
         return inquiryRepository.findAllByUserId(userId, pageable)
-                .map(InquirySummaryResponse::from);
+                .map(inquiry -> InquirySummaryResponse.from(inquiry, nickname));
     }
 
     public InquiryDetailResponse getMyInquiryDetail(Long userId, Long inquiryId) {
@@ -80,7 +83,7 @@ public class InquiryServiceImpl implements InquiryService {
         requireOwner(inquiry, userId);
 
         List<InquiryAnswer> messages = inquiryAnswerRepository.findAllByInquiryIdOrderByCreatedAtAsc(inquiryId);
-        return InquiryDetailResponse.of(inquiry, messages, resolveCultivationName(inquiry));
+        return InquiryDetailResponse.of(inquiry, messages, resolveCultivationName(inquiry), resolveUserNickname(userId));
     }
 
     @Override
@@ -97,7 +100,7 @@ public class InquiryServiceImpl implements InquiryService {
         inquiry.markPending();
 
         List<InquiryAnswer> messages = inquiryAnswerRepository.findAllByInquiryIdOrderByCreatedAtAsc(inquiryId);
-        return InquiryDetailResponse.of(inquiry, messages, resolveCultivationName(inquiry));
+        return InquiryDetailResponse.of(inquiry, messages, resolveCultivationName(inquiry), resolveUserNickname(userId));
     }
 
     // 관리자 용
@@ -109,7 +112,11 @@ public class InquiryServiceImpl implements InquiryService {
                 ? inquiryRepository.findAllByStatus(statusFilter, pageable)
                 : inquiryRepository.findAll(pageable);
 
-        return page.map(InquirySummaryResponse::from);
+        List<Long> userIds = page.getContent().stream().map(Inquiry::getUserId).distinct().toList();
+        Map<Long, String> nicknameMap = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getNickName));
+
+        return page.map(inquiry -> InquirySummaryResponse.from(inquiry, nicknameMap.getOrDefault(inquiry.getUserId(), "알 수 없음")));
     }
 
     @Override
@@ -118,7 +125,7 @@ public class InquiryServiceImpl implements InquiryService {
 
         Inquiry inquiry = getInquiryOrThrow(inquiryId);
         List<InquiryAnswer> messages = inquiryAnswerRepository.findAllByInquiryIdOrderByCreatedAtAsc(inquiryId);
-        return InquiryDetailResponse.of(inquiry, messages, resolveCultivationName(inquiry));
+        return InquiryDetailResponse.of(inquiry, messages, resolveCultivationName(inquiry), resolveUserNickname(inquiry.getUserId()));
     }
 
     @Override
@@ -135,7 +142,7 @@ public class InquiryServiceImpl implements InquiryService {
         inquiry.markResolved();
 
         List<InquiryAnswer> messages = inquiryAnswerRepository.findAllByInquiryIdOrderByCreatedAtAsc(inquiry.getId());
-        return InquiryDetailResponse.of(inquiry, messages, resolveCultivationName(inquiry));
+        return InquiryDetailResponse.of(inquiry, messages, resolveCultivationName(inquiry), resolveUserNickname(inquiry.getUserId()));
     }
 
     // Helper Method
@@ -169,5 +176,9 @@ public class InquiryServiceImpl implements InquiryService {
             log.warn("경작지 정보 조회 실패 (inquiryId={}, cultivationId={}): {}", inquiry.getId(), inquiry.getCultivationId(), e.getMessage());
             return null;
         }
+    }
+
+    private String resolveUserNickname(Long userId) {
+        return userRepository.findById(userId).map(User::getNickName).orElse("알 수 없음");
     }
 }
