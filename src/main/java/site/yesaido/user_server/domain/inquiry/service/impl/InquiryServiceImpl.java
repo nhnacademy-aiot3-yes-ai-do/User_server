@@ -6,30 +6,29 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import site.yesaido.user_server.domain.inquiry.client.CultivationClient;
+import site.yesaido.user_server.domain.inquiry.dto.request.InquiryCategoryCreateRequest;
 import site.yesaido.user_server.domain.inquiry.dto.request.InquiryCreateRequest;
 import site.yesaido.user_server.domain.inquiry.dto.request.InquiryMessageRequest;
 import site.yesaido.user_server.domain.inquiry.dto.response.CultivationSummaryResponse;
 import site.yesaido.user_server.domain.inquiry.dto.response.InquiryCategoryResponse;
 import site.yesaido.user_server.domain.inquiry.dto.response.InquiryDetailResponse;
 import site.yesaido.user_server.domain.inquiry.dto.response.InquirySummaryResponse;
-import site.yesaido.user_server.domain.inquiry.entity.Inquiry;
-import site.yesaido.user_server.domain.inquiry.entity.InquiryAnswer;
-import site.yesaido.user_server.domain.inquiry.entity.InquiryCategory;
-import site.yesaido.user_server.domain.inquiry.entity.InquiryStatus;
-import site.yesaido.user_server.domain.inquiry.exception.InquiryAccessDeniedException;
-import site.yesaido.user_server.domain.inquiry.exception.InquiryAnswerNotFoundException;
-import site.yesaido.user_server.domain.inquiry.exception.InquiryCategoryNotFoundException;
-import site.yesaido.user_server.domain.inquiry.exception.InquiryNotFoundException;
+import site.yesaido.user_server.domain.inquiry.entity.*;
+import site.yesaido.user_server.domain.inquiry.exception.*;
 import site.yesaido.user_server.domain.inquiry.repository.InquiryAnswerRepository;
 import site.yesaido.user_server.domain.inquiry.repository.InquiryCategoryRepository;
+import site.yesaido.user_server.domain.inquiry.repository.InquiryPhotoRepository;
 import site.yesaido.user_server.domain.inquiry.repository.InquiryRepository;
 import site.yesaido.user_server.domain.inquiry.service.InquiryService;
-import site.yesaido.user_server.domain.user.entity.Role;
 import site.yesaido.user_server.domain.user.entity.User;
+import site.yesaido.user_server.domain.user.entity.en.Role;
 import site.yesaido.user_server.domain.user.exception.UserNotFoundException;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
+import site.yesaido.user_server.domain.user.service.MinioService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,11 +38,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class InquiryServiceImpl implements InquiryService {
+    private static final int MAX_PHOTO_COUNT = 5;
+
     private final InquiryRepository inquiryRepository;
     private final InquiryAnswerRepository inquiryAnswerRepository;
     private final InquiryCategoryRepository inquiryCategoryRepository;
+    private final InquiryPhotoRepository inquiryPhotoRepository;
     private final UserRepository userRepository;
     private final CultivationClient cultivationClient;
+    private final MinioService minioService;
 
     @Override
     public List<InquiryCategoryResponse> getCategories() {
@@ -54,7 +57,7 @@ public class InquiryServiceImpl implements InquiryService {
 
     @Override
     @Transactional
-    public InquiryDetailResponse createInquiry(Long userId, InquiryCreateRequest request) {
+    public InquiryDetailResponse createInquiry(Long userId, InquiryCreateRequest request, List<MultipartFile> files) {
         InquiryCategory category = inquiryCategoryRepository.findById(request.getCategoryId())
                 .orElseThrow(InquiryCategoryNotFoundException::new);
 
@@ -69,7 +72,9 @@ public class InquiryServiceImpl implements InquiryService {
                 InquiryAnswer.createRoot(inquiry, request.getContent())
         );
 
-        return InquiryDetailResponse.of(inquiry, List.of(rootMessage), resolveCultivationName(inquiry), resolveUserNickname(userId));
+        saveInquiryPhotos(rootMessage, files);
+
+        return InquiryDetailResponse.of(inquiry, List.of(rootMessage), resolveCultivationName(inquiry));
     }
 
     public Page<InquirySummaryResponse> getMyInquiries(Long userId, Pageable pageable) {
@@ -84,6 +89,17 @@ public class InquiryServiceImpl implements InquiryService {
 
         List<InquiryAnswer> messages = inquiryAnswerRepository.findAllByInquiryIdOrderByCreatedAtAsc(inquiryId);
         return InquiryDetailResponse.of(inquiry, messages, resolveCultivationName(inquiry), resolveUserNickname(userId));
+    }
+
+    @Override
+    @Transactional
+    public InquiryCategoryResponse createCategory(Long adminId, InquiryCategoryCreateRequest request) {
+        requireAdmin(adminId);
+
+        InquiryCategory category = InquiryCategory.create(request.categoryName());
+        InquiryCategory savedCategory = inquiryCategoryRepository.save(category);
+
+        return InquiryCategoryResponse.from(savedCategory);
     }
 
     @Override
@@ -176,6 +192,38 @@ public class InquiryServiceImpl implements InquiryService {
             log.warn("경작지 정보 조회 실패 (inquiryId={}, cultivationId={}): {}", inquiry.getId(), inquiry.getCultivationId(), e.getMessage());
             return null;
         }
+    }
+
+    private void saveInquiryPhotos(InquiryAnswer inquiryAnswer, List<MultipartFile> files){
+        if(files == null || files.isEmpty()){
+            return;
+        }
+
+        if(files.size() > MAX_PHOTO_COUNT){
+            throw new InquiryPhotoLimitExceededException("문의 사진은 최대 " + MAX_PHOTO_COUNT + "장까지만 등록할 수 있습니다.");
+        }
+
+        List<String> uploadKeys = new ArrayList<>();
+
+        try{
+            for(MultipartFile file : files){
+                String objectKey = minioService.uploadInquiryPhoto(inquiryAnswer.getId(), file);
+                uploadKeys.add(objectKey);
+
+                InquiryPhoto inquiryPhoto = InquiryPhoto.create(inquiryAnswer, objectKey);
+                inquiryPhotoRepository.save(inquiryPhoto);
+            }
+        }catch (Exception e){
+            for(String key : uploadKeys){
+                try{
+                    minioService.deleteFile(key);
+                }catch (Exception deleteEx){
+                    log.error("MiniO 보상 삭제 실패 : key={}", key, deleteEx);
+                }
+            }
+            throw e;
+        }
+
     }
 
     private String resolveUserNickname(Long userId) {

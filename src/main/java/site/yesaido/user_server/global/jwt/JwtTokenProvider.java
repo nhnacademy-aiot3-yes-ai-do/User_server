@@ -8,7 +8,7 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import site.yesaido.user_server.domain.user.entity.Role;
+import site.yesaido.user_server.domain.user.entity.en.Role;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;

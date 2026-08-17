@@ -2,8 +2,10 @@ package site.yesaido.user_server.domain.user.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import site.yesaido.user_server.domain.user.dto.UserSummaryResponse;
 import site.yesaido.user_server.domain.user.dto.profile.PasswordVerifyRequest;
 import site.yesaido.user_server.domain.user.dto.profile.ProfileUpdateRequest;
@@ -62,7 +64,21 @@ public class UserController {
         return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
     }
 
-    // 6. 프로필 수정 비밀번호 검증
+    // 6. 프로필 이미지
+    @PostMapping(value = "/mypage/profile-image",
+                consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<String>> uploadProfileImage(
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestPart("file") MultipartFile file
+    ) {
+        String objectKey = userService.uploadProfileImage(userId, file);
+        ApiResponse<String> apiResponse = ApiResponse.ok("프로필 이미지 업로드 성공", objectKey);
+        return ResponseEntity.status(apiResponse.httpStatus()).body(apiResponse);
+    }
+
+
+
+    // 7. 프로필 수정 비밀번호 검증
     @PostMapping("/verify-password")
     public ResponseEntity<ApiResponse<Boolean>> verifyPassword(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,

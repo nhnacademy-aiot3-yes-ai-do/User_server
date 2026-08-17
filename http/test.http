@@ -1,0 +1,55 @@
+### 프로필 사진 등록
+POST http://localhost:8081/api/users/mypage/profile-image
+X-User-Id: 1
+Content-Type: multipart/form-data; boundary=ProfileImageBoundary
+
+--ProfileImageBoundary
+Content-Disposition: form-data; name="file"; filename="mushroom.jpg"
+Content-Type: image/jpeg
+
+< /Users/chosun-nhn16/Downloads/mushdish.jpg
+--ProfileImageBoundary--
+
+### 관리자 문의 카테고리 등록
+POST http://localhost:8081/api/admin/inquiries/categories
+X-User-Id: 6
+Content-Type: application/json
+
+{
+  "categoryName": "재배 관련"
+}
+
+### 요청
+GET http://localhost:8081/api/inquiries/categories
+
+### 문의 사항 사진 등록
+POST http://localhost:8081/api/inquiries
+X-User-Id: 1
+Content-Type: multipart/form-data; boundary=InquiryBoundary
+
+--InquiryBoundary
+Content-Disposition: form-data; name="request"
+Content-Type: application/json
+
+{
+  "categoryId": 1,
+  "title": "재배 상태 문의",
+  "content": "재배의 이상이 생긴 것 같아 문의 남깁니다.",
+  "cultivationId": 3
+}
+--InquiryBoundary
+Content-Disposition: form-data; name="files"; filename="mushroom.jpg"
+Content-Type: image/jpeg
+
+< /Users/chosun-nhn16/Downloads/mushdish.jpg
+--InquiryBoundary--
+
+
+### 실제 화면 표시용 URL
+GET http://localhost:8081/api/inquiries/1
+X-User-Id: 1
+
+
+
+
+

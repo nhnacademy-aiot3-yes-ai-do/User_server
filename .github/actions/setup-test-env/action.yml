@@ -21,3 +21,9 @@ runs:
         
         echo "MAIL_USERNAME=test@naver.com" >> "$GITHUB_ENV"
         echo "MAIL_PASSWORD=testpassword" >> "$GITHUB_ENV"
+        
+        # MinIO
+        echo "MINIO_URL=http://localhost:9000" >> "$GITHUB_ENV"
+        echo "MINIO_ACCESS_KEY=minioadmin" >> "$GITHUB_ENV"
+        echo "MINIO_SECRET_KEY=minioadmin123" >> "$GITHUB_ENV"
+        echo "MINIO_BUCKET=testbucket" >> "$GITHUB_ENV"
