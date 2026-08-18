@@ -24,7 +24,6 @@ import site.yesaido.user_server.domain.user.repository.UserRepository;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
