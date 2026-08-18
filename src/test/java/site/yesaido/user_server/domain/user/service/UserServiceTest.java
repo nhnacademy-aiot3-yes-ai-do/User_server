@@ -41,6 +41,12 @@ class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private MinioService minioService;
+
+    @Mock
+    private site.yesaido.user_server.domain.user.repository.ProfileImageRepository profileImageRepository;
+
     @InjectMocks
     private UserService userService;
 
@@ -244,6 +250,104 @@ class UserServiceTest {
             boolean result = userService.verifyPassword(1L, "rawPass");
 
             assertThat(result).isFalse();
+        }
+
+        @Test
+        @DisplayName("비밀번호 변경 성공")
+        void updatePassword_success() {
+            User user = User.builder().id(1L).nickName("nick").password("encodedOld").build();
+            ProfileUpdateRequest request = new ProfileUpdateRequest("nick", "rawOld", "rawNew");
+
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(passwordEncoder.matches("rawOld", "encodedOld")).willReturn(true);
+            given(passwordEncoder.encode("rawNew")).willReturn("encodedNew");
+
+            userService.updateProfile(1L, request);
+
+            assertThat(user.getPassword()).isEqualTo("encodedNew");
+        }
+
+        @Test
+        @DisplayName("비밀번호 변경 실패 - 현재 비밀번호 미입력 시 InvalidPasswordException")
+        void updatePassword_noCurrentPassword_throwsException() {
+            User user = User.builder().id(1L).nickName("nick").password("encodedOld").build();
+            ProfileUpdateRequest request = new ProfileUpdateRequest("nick", "", "rawNew");
+
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+
+            assertThrows(site.yesaido.user_server.domain.user.exception.InvalidPasswordException.class,
+                    () -> userService.updateProfile(1L, request));
+        }
+
+        @Test
+        @DisplayName("비밀번호 변경 실패 - 현재 비밀번호 불일치 시 InvalidPasswordException")
+        void updatePassword_wrongCurrentPassword_throwsException() {
+            User user = User.builder().id(1L).nickName("nick").password("encodedOld").build();
+            ProfileUpdateRequest request = new ProfileUpdateRequest("nick", "wrongOld", "rawNew");
+
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(passwordEncoder.matches("wrongOld", "encodedOld")).willReturn(false);
+
+            assertThrows(site.yesaido.user_server.domain.user.exception.InvalidPasswordException.class,
+                    () -> userService.updateProfile(1L, request));
+        }
+
+        @Test
+        @DisplayName("프로필 이미지 업로드 성공 - 기존 이미지가 없는 경우 새로 생성")
+        void uploadProfileImage_newImage_success() {
+            org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+            try {
+                User user = User.builder().id(1L).build();
+                org.springframework.web.multipart.MultipartFile file = mock(org.springframework.web.multipart.MultipartFile.class);
+
+                given(userRepository.findById(1L)).willReturn(Optional.of(user));
+                given(minioService.uploadProfileImage(1L, file)).willReturn("profiles/1/new.jpg");
+                given(profileImageRepository.findByUserId(1L)).willReturn(Optional.empty());
+
+                String result = userService.uploadProfileImage(1L, file);
+
+                assertThat(result).isEqualTo("profiles/1/new.jpg");
+                verify(profileImageRepository).save(any());
+            } finally {
+                org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization();
+            }
+        }
+
+        @Test
+        @DisplayName("프로필 이미지 업로드 성공 - 기존 이미지가 있는 경우 키 교체")
+        void uploadProfileImage_replaceImage_success() {
+            org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+            try {
+                User user = User.builder().id(1L).build();
+                site.yesaido.user_server.domain.user.entity.ProfileImage oldImage =
+                        site.yesaido.user_server.domain.user.entity.ProfileImage.create(user, "profiles/1/old.jpg");
+                org.springframework.web.multipart.MultipartFile file = mock(org.springframework.web.multipart.MultipartFile.class);
+
+                given(userRepository.findById(1L)).willReturn(Optional.of(user));
+                given(minioService.uploadProfileImage(1L, file)).willReturn("profiles/1/new.jpg");
+                given(profileImageRepository.findByUserId(1L)).willReturn(Optional.of(oldImage));
+
+                String result = userService.uploadProfileImage(1L, file);
+
+                assertThat(result).isEqualTo("profiles/1/new.jpg");
+                assertThat(oldImage.getObjectKey()).isEqualTo("profiles/1/new.jpg");
+            } finally {
+                org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization();
+            }
+        }
+
+        @Test
+        @DisplayName("프로필 이미지 업로드 실패 - 예외 발생 시 MinIO 업로드된 새 이미지 삭제")
+        void uploadProfileImage_exception_deletesQuietly() {
+            User user = User.builder().id(1L).build();
+            org.springframework.web.multipart.MultipartFile file = mock(org.springframework.web.multipart.MultipartFile.class);
+
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(minioService.uploadProfileImage(1L, file)).willReturn("profiles/1/new.jpg");
+            given(profileImageRepository.findByUserId(1L)).willThrow(new RuntimeException("DB 에러"));
+
+            assertThrows(RuntimeException.class, () -> userService.uploadProfileImage(1L, file));
+            verify(minioService).deleteQuietly("profiles/1/new.jpg");
         }
     }
 

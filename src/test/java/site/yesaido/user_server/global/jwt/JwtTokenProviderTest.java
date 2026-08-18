@@ -12,12 +12,12 @@ class JwtTokenProviderTest {
 
     private JwtTokenProvider jwtTokenProvider;
 
-    private static final String secretKey = "dGVzdC1qd3Qtc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmctZm9yLWhzMjU2LWFsZ29yaXRobS10ZXN0";
+    private static final String SECRET_KEY = "dGVzdC1qd3Qtc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmctZm9yLWhzMjU2LWFsZ29yaXRobS10ZXN0";
 
     @BeforeEach
     void setUp() {
         jwtTokenProvider = new JwtTokenProvider();
-        ReflectionTestUtils.setField(jwtTokenProvider, "secretKey", secretKey);
+        ReflectionTestUtils.setField(jwtTokenProvider, "secretKey", SECRET_KEY);
         ReflectionTestUtils.setField(jwtTokenProvider, "accessTokenExpireTime", 1800000L);
         ReflectionTestUtils.setField(jwtTokenProvider, "refreshTokenExpireTime", 1209600000L);
         jwtTokenProvider.init();
@@ -81,7 +81,7 @@ class JwtTokenProviderTest {
     @DisplayName("실패 : 만료된 토큰 검증 시 false 반환 분기")
     void validateToken_expiredToken() {
         JwtTokenProvider expiredProvider = new JwtTokenProvider();
-        ReflectionTestUtils.setField(expiredProvider, "secretKey", secretKey);
+        ReflectionTestUtils.setField(expiredProvider, "secretKey", SECRET_KEY);
         ReflectionTestUtils.setField(expiredProvider, "accessTokenExpireTime", -1000L);
         ReflectionTestUtils.setField(expiredProvider, "refreshTokenExpireTime", -1000L);
         expiredProvider.init();
@@ -97,5 +97,24 @@ class JwtTokenProviderTest {
     void validateToken_nullOrEmpty() {
         assertThat(jwtTokenProvider.validateToken(null)).isFalse();
         assertThat(jwtTokenProvider.validateToken("")).isFalse();
+    }
+
+    @Test
+    @DisplayName("성공 : role claim이 없는 토큰에서 Role 추출 시 기본값 Role.USER 반환 분기")
+    void getRoleFromToken_nullRole_returnsDefaultUser() {
+        java.util.Date now = new java.util.Date();
+        java.util.Date validity = new java.util.Date(now.getTime() + 1800000L);
+        java.security.Key key = (java.security.Key) ReflectionTestUtils.getField(jwtTokenProvider, "key");
+
+        String tokenWithoutRole = io.jsonwebtoken.Jwts.builder()
+                .setSubject("10")
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(key, io.jsonwebtoken.SignatureAlgorithm.HS256)
+                .compact();
+
+        Role role = jwtTokenProvider.getRoleFromToken(tokenWithoutRole);
+
+        assertThat(role).isEqualTo(Role.USER);
     }
 }

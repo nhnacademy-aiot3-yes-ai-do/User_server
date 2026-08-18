@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import site.yesaido.user_server.domain.inquiry.exception.FileDeleteException;
+import site.yesaido.user_server.domain.inquiry.exception.FileStorageException;
 import site.yesaido.user_server.domain.inquiry.exception.FileUploadException;
 import site.yesaido.user_server.domain.inquiry.exception.InvalidFileException;
 
@@ -20,7 +22,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MinioService {
 
-    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
+    private static final long MAX_FILE_SIZE = 5L * 1024 * 1024;
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/jpeg",
@@ -37,6 +39,7 @@ public class MinioService {
      * 프로필 이미지를 MinIO에 업로드하고 object key를 반환한다.
      */
     public String uploadProfileImage(Long userId, MultipartFile file) {
+
         String objectName = "profiles/" + userId + "/" + UUID.randomUUID() + getExtension(file.getOriginalFilename());
 
         return uploadImage(file, objectName);
@@ -46,6 +49,7 @@ public class MinioService {
      * 문의 이미지를 MinIO에 업로드하고 object key를 반환한다.
      */
     public String uploadInquiryPhoto(Long inquiryAnswerId, MultipartFile file) {
+
         String objectName = "inquiries/" + inquiryAnswerId + "/" + UUID.randomUUID() + getExtension(file.getOriginalFilename());
 
         return uploadImage(file, objectName);
@@ -56,7 +60,6 @@ public class MinioService {
     private String uploadImage(MultipartFile file, String objectName){
         validateFile(file);
         validateFileSize(file.getSize());
-
         try (InputStream inputStream = file.getInputStream()) {
 
             minioClient.putObject(
@@ -90,7 +93,7 @@ public class MinioService {
             );
         }catch (Exception e){
             log.error("MiniO 파일 삭제 실패 : {}", objectName, e);
-            throw new RuntimeException("프로필 사진 삭제에 실패했습니다.");
+            throw new FileDeleteException("프로필 사진 삭제에 실패했습니다.");
         }
     }
 
@@ -134,7 +137,7 @@ public class MinioService {
 
     private void validateFileSize(long fileSize) {
         if (fileSize == 0) {
-            throw new IllegalArgumentException("업로드할 파일이 존재하지 않습니다.");
+            throw new InvalidFileException("업로드할 파일이 존재하지 않습니다.");
         }
 
         if (fileSize > MAX_FILE_SIZE) {
@@ -160,7 +163,7 @@ public class MinioService {
             }
         }catch (Exception e){
             log.error("MiniO 버킷 확인 또는 생성 실패: {}", bucketName, e);
-            throw new RuntimeException("이미지 저장소를 사용할 수 없습니다.",e);
+            throw new FileStorageException("이미지 저장소를 사용할 수 없습니다.");
         }
     }
 
