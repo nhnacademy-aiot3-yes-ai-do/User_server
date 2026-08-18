@@ -1,30 +1,39 @@
 package site.yesaido.user_server.domain.user.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 import site.yesaido.user_server.domain.user.dto.UserSummaryResponse;
+import site.yesaido.user_server.domain.user.dto.profile.ProfileUpdateRequest;
+import site.yesaido.user_server.domain.user.dto.profile.UserProfileResponse;
 import site.yesaido.user_server.domain.user.dto.search.UserSearchResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignUpRequest;
+import site.yesaido.user_server.domain.user.entity.ProfileImage;
 import site.yesaido.user_server.domain.user.entity.User;
-import site.yesaido.user_server.domain.user.entity.UserStatus;
-import site.yesaido.user_server.domain.user.exception.AlreadyWithdrawnException;
-import site.yesaido.user_server.domain.user.exception.EmailDuplicationException;
-import site.yesaido.user_server.domain.user.exception.NicknameDuplicationException;
-import site.yesaido.user_server.domain.user.exception.UserNotFoundException;
+import site.yesaido.user_server.domain.user.entity.en.UserStatus;
+import site.yesaido.user_server.domain.user.exception.*;
+import site.yesaido.user_server.domain.user.repository.ProfileImageRepository;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserService {
     private final UserRepository userRepository;
+    private final MinioService minioService;
+    private final ProfileImageRepository profileImageRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -64,15 +73,59 @@ public class UserService {
         return user;
     }
 
+    public UserProfileResponse getMyProfile(Long userId){
+        User user = getUserById(userId);
+        return UserProfileResponse.from(user);
+    }
+
+    public boolean verifyPassword(Long userId, String rawPassword){
+        if(userId == null){
+            return false;
+        }
+        User user = getUserById(userId);
+        return passwordEncoder.matches(rawPassword, user.getPassword());
+    }
+
     @Transactional
-    public void updateProfile(Long userId, String newNickname){
+    public UserProfileResponse updateProfile(Long userId, ProfileUpdateRequest request){
         User user = getUserById(userId);
 
-        if(!user.getNickName().equals(newNickname) && userRepository.existsByNickName(newNickname)){
-            throw new NicknameDuplicationException("이미 사용 중인 닉네임입니다.");
+        if(StringUtils.hasText(request.nickname()) && !user.getNickName().equals(request.nickname())){
+            if(userRepository.existsByNickName(request.nickname())){
+                throw new NicknameDuplicationException("이미 사용 중인 닉네임입니다.");
+            }
+            user.updateNickname(request.nickname());
         }
 
-        user.updateNickname(newNickname);
+        if(StringUtils.hasText(request.newPassword())){
+            if (!StringUtils.hasText(request.currentPassword())) {
+                throw new InvalidPasswordException("현재 비밀번호를 입력해 주세요.");
+            }
+            if(!passwordEncoder.matches(request.currentPassword(), user.getPassword())){
+                throw new InvalidPasswordException("현재 비밀번호가 일치하지 않습니다.");
+            }
+            user.updatePassword(passwordEncoder.encode(request.newPassword()));
+        }
+        return UserProfileResponse.from(user);
+    }
+
+    @Transactional
+    public String uploadProfileImage(Long userId, MultipartFile file) {
+        User user = getUserById(userId);
+
+        String newObjectKey = minioService.uploadProfileImage(userId, file);
+
+        try{
+            String oldObjectKey = replaceProfileImage(user, newObjectKey);
+
+            registerMinioCleanUp(oldObjectKey, newObjectKey);
+
+            return newObjectKey;
+        }catch (Exception e){
+            minioService.deleteQuietly(newObjectKey);
+            throw e;
+        }
+
     }
 
     @Transactional
@@ -105,5 +158,39 @@ public class UserService {
                 .map(UserSummaryResponse::from)
                 .toList();
     }
+
+    private String replaceProfileImage(User user, String newObjectKey){
+        return profileImageRepository.findByUserId(user.getId())
+                .map(profileImage -> {
+                    String oldObjectKey = profileImage.getObjectKey();
+                    profileImage.updateObjectKey(newObjectKey);
+                    return oldObjectKey;
+                })
+                .orElseGet(()->{
+                    ProfileImage profileImage = ProfileImage.create(user, newObjectKey);
+                    profileImageRepository.save(profileImage);
+                    return null;
+                });
+    }
+
+    private void registerMinioCleanUp(String oldObjectKey, String newObjectKey){
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() { // 커밋 확정 후 옛날 사진 안전 삭제
+                        minioService.deleteQuietly(oldObjectKey);
+                    }
+
+                    @Override
+                    public void afterCompletion(int status) { // 롤백/실패 시 새 사진 삭제
+                        if(status != TransactionSynchronization.STATUS_COMMITTED){
+                            minioService.deleteQuietly(newObjectKey);
+                        }
+                    }
+                }
+        );
+    }
+
+
 
 }

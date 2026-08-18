@@ -5,19 +5,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
+@ActiveProfiles("test")
 class UserServerApplicationTests {
 
     @Autowired
-    private ApplicationContext applicationContext;
+    private ApplicationContext context;
 
     @Test
-    @DisplayName("성공 : 스프링 부트 애플리케이션 컨텍스트가 정상 로드된다")
+    @DisplayName("스프링 컨텍스트가 정상적으로 로드된다")
     void contextLoads() {
-        assertThat(applicationContext).isNotNull();
+        assertThat(context).isNotNull();
     }
 
 }

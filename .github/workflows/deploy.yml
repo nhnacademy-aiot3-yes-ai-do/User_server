@@ -44,6 +44,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5            
 
     steps:
       - uses: actions/checkout@v4
@@ -60,6 +69,9 @@ jobs:
       - uses: ./.github/actions/setup-test-env
 
       - name: Run tests
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
         run: ./mvnw -B clean test
 
       - name: Check JaCoCo 40% coverage

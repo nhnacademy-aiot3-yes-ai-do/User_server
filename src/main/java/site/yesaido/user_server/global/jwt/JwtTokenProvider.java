@@ -1,5 +1,6 @@
 package site.yesaido.user_server.global.jwt;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -7,7 +8,7 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import site.yesaido.user_server.domain.user.entity.Role;
+import site.yesaido.user_server.domain.user.entity.en.Role;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -33,13 +34,12 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String createAccessToken(Long userId, String email, Role role){
+    public String createAccessToken(Long userId, Role role){
         Date now = new Date();
         Date validity = new Date(now.getTime() + accessTokenExpireTime);
 
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
-                .claim("email", email)
                 .claim("role", role.name())
                 .setIssuedAt(now)
                 .setExpiration(validity)
@@ -47,12 +47,13 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String createRefreshToken(Long userId){
+    public String createRefreshToken(Long userId, Role role){
         Date now = new Date();
         Date validity = new Date(now.getTime() + refreshTokenExpireTime);
 
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
+                .claim("role", role.name())
                 .setIssuedAt(now)
                 .setExpiration(validity)
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -73,4 +74,9 @@ public class JwtTokenProvider {
         return Long.parseLong(userId);
     }
 
+    public Role getRoleFromToken(String token){
+        Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
+        String roleStr = claims.get("role", String.class);
+        return roleStr != null ? Role.valueOf(roleStr) : Role.USER;
+    }
 }
