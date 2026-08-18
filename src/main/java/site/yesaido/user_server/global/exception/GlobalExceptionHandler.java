@@ -93,6 +93,17 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다");
     }
 
+    // 500 (MinIO 스토리지 파일 업로드/삭제 실패)
+    @ExceptionHandler({
+            FileUploadException.class,
+            FileDeleteException.class
+    })
+    public ResponseEntity<ErrorResponse> handleFileStorageException(RuntimeException e, HttpServletRequest request) {
+        log.error("ERROR [스토리지 처리 실패] API: {} {} | 예외: {} | 상세원인: {}",
+                request.getMethod(), request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage(), e);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+    }
+
 
     @ExceptionHandler(BindException.class)
     public ResponseEntity<ErrorResponse> handleBindException(BindException e, HttpServletRequest request){

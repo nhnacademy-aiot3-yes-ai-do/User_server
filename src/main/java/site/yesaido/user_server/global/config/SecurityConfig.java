@@ -8,6 +8,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import site.yesaido.user_server.global.exception.SecurityFilterChainConfigurationException;
 
 @Configuration
 public class SecurityConfig {
@@ -22,15 +23,21 @@ public class SecurityConfig {
      * 내부 마이크로서비스(Auth_server)는 무상태(Stateless) REST API로 최적화합니다.
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
-                .csrf(AbstractHttpConfigurer::disable)
-                .formLogin(AbstractHttpConfigurer::disable)
-                .httpBasic(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
-                )
-                .build();
-    }
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+
+        try{
+            return http
+                    .csrf(AbstractHttpConfigurer::disable)
+                    .formLogin(AbstractHttpConfigurer::disable)
+                    .httpBasic(AbstractHttpConfigurer::disable)
+                    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                    .authorizeHttpRequests(auth -> auth
+                            .anyRequest().permitAll()
+                    )
+                    .build();
+        }catch (Exception e){
+            throw new SecurityFilterChainConfigurationException("시큐리티 필터체인 구성에 실패했습니다.", e);
+            }
+        }
+        
 }

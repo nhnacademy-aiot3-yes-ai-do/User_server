@@ -119,4 +119,45 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().getMessage()).isEqualTo("서버 내부 오류가 발생했습니다");
     }
 
+    @Test
+    @DisplayName("InquiryAccessDeniedException 발생 시 403 FORBIDDEN을 반환한다")
+    void handleInquiryAccessDeniedException_success() {
+        setupMockRequest();
+        site.yesaido.user_server.domain.inquiry.exception.InquiryAccessDeniedException e =
+                new site.yesaido.user_server.domain.inquiry.exception.InquiryAccessDeniedException("접근 권한이 없습니다.");
+
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleInquiryAccessDeniedException(e, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getMessage()).isEqualTo("접근 권한이 없습니다.");
+    }
+
+    @Test
+    @DisplayName("TooManyRequestException 발생 시 429 TOO_MANY_REQUESTS를 반환한다")
+    void handleTooManyRequestException_success() {
+        setupMockRequest();
+        site.yesaido.user_server.domain.user.exception.TooManyRequestException e =
+                new site.yesaido.user_server.domain.user.exception.TooManyRequestException("요청이 너무 많습니다.");
+
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleTooManyRequestException(e, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getMessage()).isEqualTo("요청이 너무 많습니다.");
+    }
+
+    @Test
+    @DisplayName("FileDeleteException 발생 시 500 INTERNAL_SERVER_ERROR와 메시지를 반환한다")
+    void handleFileStorageException_success() {
+        setupMockRequest();
+        site.yesaido.user_server.domain.inquiry.exception.FileDeleteException e =
+                new site.yesaido.user_server.domain.inquiry.exception.FileDeleteException("사진 삭제 실패");
+
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleFileStorageException(e, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getMessage()).isEqualTo("사진 삭제 실패");
+    }
 }

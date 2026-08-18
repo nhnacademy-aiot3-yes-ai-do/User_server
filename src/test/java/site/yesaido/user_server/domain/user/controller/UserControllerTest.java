@@ -9,6 +9,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import site.yesaido.user_server.domain.user.dto.UserSummaryResponse;
+import site.yesaido.user_server.domain.user.dto.profile.PasswordVerifyRequest;
+import site.yesaido.user_server.domain.user.dto.profile.ProfileUpdateRequest;
+import site.yesaido.user_server.domain.user.dto.profile.UserProfileResponse;
 import site.yesaido.user_server.domain.user.dto.search.UserSearchResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignResponse;
 import site.yesaido.user_server.domain.user.dto.signup.UserSignUpRequest;
@@ -21,7 +24,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class UserControllerTest {
@@ -133,5 +139,58 @@ class UserControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("마이페이지 프로필 조회 성공")
+    void getMyProfile_success() {
+        UserProfileResponse expected = mock(UserProfileResponse.class);
+        given(userService.getMyProfile(1L)).willReturn(expected);
+
+        ResponseEntity<ApiResponse<UserProfileResponse>> response = userController.getMyProfile(1L);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("마이페이지 프로필 수정 성공")
+    void updateProfile_success() {
+        ProfileUpdateRequest request = new ProfileUpdateRequest("새닉네임", "current1!", "newpass1!");
+        UserProfileResponse expected = mock(UserProfileResponse.class);
+        given(userService.updateProfile(1L, request)).willReturn(expected);
+
+        ResponseEntity<ApiResponse<UserProfileResponse>> response = userController.updateProfile(1L, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("프로필 이미지 업로드 성공")
+    void uploadProfileImage_success() {
+        org.springframework.web.multipart.MultipartFile file = mock(org.springframework.web.multipart.MultipartFile.class);
+        given(userService.uploadProfileImage(1L, file)).willReturn("profiles/1/img.jpg");
+
+        ResponseEntity<ApiResponse<String>> response = userController.uploadProfileImage(1L, file);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo("profiles/1/img.jpg");
+    }
+
+    @Test
+    @DisplayName("비밀번호 검증 성공")
+    void verifyPassword_success() {
+        PasswordVerifyRequest request = new PasswordVerifyRequest("password123!");
+        given(userService.verifyPassword(1L, "password123!")).willReturn(true);
+
+        ResponseEntity<ApiResponse<Boolean>> response = userController.verifyPassword(1L, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isTrue();
     }
 }
