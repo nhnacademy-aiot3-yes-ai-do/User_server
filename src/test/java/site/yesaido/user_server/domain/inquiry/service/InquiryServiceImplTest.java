@@ -326,9 +326,11 @@ class InquiryServiceImplTest {
             void createCategory_notAdmin_throwsException() {
                 Long userId = 1L;
                 User normalUser = User.builder().id(userId).role(Role.USER).build();
+                InquiryCategoryCreateRequest request = new InquiryCategoryCreateRequest("해당 카테고리");
+
                 given(userRepository.findById(userId)).willReturn(Optional.of(normalUser));
 
-                assertThatThrownBy(() -> inquiryService.createCategory(userId, new InquiryCategoryCreateRequest("해킹 카테고리")))
+                assertThatThrownBy(() -> inquiryService.createCategory(userId, request))
                         .isInstanceOf(InquiryAccessDeniedException.class);
             }
 
