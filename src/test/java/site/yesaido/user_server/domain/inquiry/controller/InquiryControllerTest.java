@@ -58,7 +58,7 @@ class InquiryControllerTest {
         List<MultipartFile> files = List.of(mock(MultipartFile.class));
         InquiryDetailResponse detailResponse = mock(InquiryDetailResponse.class);
 
-        given(inquiryService.createInquiry(eq(1L), eq(request), eq(files))).willReturn(detailResponse);
+        given(inquiryService.createInquiry(1L, request, files)).willReturn(detailResponse);
 
         ResponseEntity<ApiResponse<InquiryDetailResponse>> response = inquiryController.createInquiry(1L, request, files);
 
