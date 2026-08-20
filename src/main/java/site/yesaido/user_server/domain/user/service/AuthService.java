@@ -10,12 +10,14 @@ import site.yesaido.user_server.domain.user.dto.login.LoginRequest;
 import site.yesaido.user_server.domain.user.dto.oauth.GoogleLoginRequest;
 import site.yesaido.user_server.domain.user.dto.token.TokenResponse;
 import site.yesaido.user_server.domain.user.entity.User;
+import site.yesaido.user_server.domain.user.entity.en.Role;
 import site.yesaido.user_server.domain.user.entity.en.UserStatus;
 import site.yesaido.user_server.domain.user.exception.*;
 import site.yesaido.user_server.domain.user.repository.UserRepository;
 import site.yesaido.user_server.global.jwt.JwtTokenProvider;
 import site.yesaido.user_server.global.oauth.GoogleTokenVerifier;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -28,6 +30,9 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final StringRedisTemplate stringRedisTemplate;
     private final GoogleTokenVerifier googleTokenVerifier;
+
+    private static final Duration GRACE_PERIOD = Duration.ofSeconds(5);
+    private static final String GRACE_KEY_PREFIX = "RT:grace:";
 
     @Transactional
     public TokenResponse login(LoginRequest request){
@@ -80,23 +85,16 @@ public class AuthService {
 
         String savedRefreshToken = stringRedisTemplate.opsForValue().get("RT:" + userId);
 
-        if(savedRefreshToken == null || !savedRefreshToken.equals(refreshToken)){
-            throw new InvalidTokenException("레디스 토큰과 일치하지 않습니다. (로그아웃 또는 해킹 위험이 있습니다.)");
+        if(refreshToken.equals(savedRefreshToken)) {
+            return rotateRefreshToken(userId, refreshToken);
         }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("유저를 찾을 수 없습니다."));
+        TokenResponse graceResponse = readGraceResponse(userId, refreshToken);
+        if (graceResponse != null) {
+            return graceResponse;
+        }
 
-        String newAccessToken = jwtTokenProvider.createAccessToken(userId, user.getRole());
-        String newRefreshToken = jwtTokenProvider.createRefreshToken(userId, user.getRole());
-
-        stringRedisTemplate.opsForValue().set("RT:" + user.getId(), newRefreshToken, 14, TimeUnit.DAYS);
-
-        return TokenResponse.builder()
-                .accessToken(newAccessToken)
-                .refreshToken(newRefreshToken)
-                .role(user.getRole())
-                .build();
+        throw new InvalidTokenException("레디스 토큰과 일치하지 않습니다. (로그아웃 또는 해킹 위험이 있습니다.)");
     }
 
     @Transactional
@@ -140,4 +138,51 @@ public class AuthService {
                 .build();
     }
 
+    private TokenResponse rotateRefreshToken(Long userId, String oldRefreshToken) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("유저를 찾을 수 없습니다."));
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(userId, user.getRole());
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(userId, user.getRole());
+
+        stringRedisTemplate.opsForValue().set("RT:" + user.getId(), newRefreshToken, 14, TimeUnit.DAYS);
+
+        TokenResponse response = TokenResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .role(user.getRole())
+                .build();
+
+        saveGraceResponse(oldRefreshToken, response);
+        return response;
+    }
+
+    private void saveGraceResponse(String oldRefreshToken, TokenResponse response) {
+        String value = response.getAccessToken() + "|" + response.getRefreshToken() + "|" + response.getRole();
+        stringRedisTemplate.opsForValue().set(GRACE_KEY_PREFIX + oldRefreshToken, value, GRACE_PERIOD);
+    }
+
+    private TokenResponse readGraceResponse(Long userId, String oldRefreshToken){
+        String value = stringRedisTemplate.opsForValue().get(GRACE_KEY_PREFIX + oldRefreshToken);
+        if (value == null) {
+            return null;
+        }
+
+        String[] parts = value.split("\\|", 3);
+        if (parts.length != 3) {
+            return null;
+        }
+
+        String graceRefreshToken = parts[1];
+        String currentRefreshToken = stringRedisTemplate.opsForValue().get("RT:" + userId);
+        if (currentRefreshToken == null || !currentRefreshToken.equals(graceRefreshToken)) {
+            return null;
+        }
+
+        return TokenResponse.builder()
+                .accessToken(parts[0])
+                .refreshToken(graceRefreshToken)
+                .role(Role.valueOf(parts[2]))
+                .build();
+    }
 }
