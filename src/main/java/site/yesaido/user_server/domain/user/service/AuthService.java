@@ -31,7 +31,7 @@ public class AuthService {
     private final StringRedisTemplate stringRedisTemplate;
     private final GoogleTokenVerifier googleTokenVerifier;
 
-    private static final Duration GRACE_PERIOD = Duration.ofMinutes(5);
+    private static final Duration GRACE_PERIOD = Duration.ofSeconds(5);
     private static final String GRACE_KEY_PREFIX = "RT:grace:";
 
     @Transactional
