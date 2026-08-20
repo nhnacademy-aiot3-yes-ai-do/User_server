@@ -85,11 +85,11 @@ public class AuthService {
 
         String savedRefreshToken = stringRedisTemplate.opsForValue().get("RT:" + userId);
 
-        if(savedRefreshToken != null && savedRefreshToken.equals(refreshToken)){
+        if(refreshToken.equals(savedRefreshToken)) {
             return rotateRefreshToken(userId, refreshToken);
         }
 
-        TokenResponse graceResponse = readGraceResponse(refreshToken);
+        TokenResponse graceResponse = readGraceResponse(userId, refreshToken);
         if (graceResponse != null) {
             return graceResponse;
         }
@@ -162,7 +162,7 @@ public class AuthService {
         stringRedisTemplate.opsForValue().set(GRACE_KEY_PREFIX + oldRefreshToken, value, GRACE_PERIOD);
     }
 
-    private TokenResponse readGraceResponse(String oldRefreshToken){
+    private TokenResponse readGraceResponse(Long userId, String oldRefreshToken){
         String value = stringRedisTemplate.opsForValue().get(GRACE_KEY_PREFIX + oldRefreshToken);
         if (value == null) {
             return null;
@@ -173,9 +173,15 @@ public class AuthService {
             return null;
         }
 
+        String graceRefreshToken = parts[1];
+        String currentRefreshToken = stringRedisTemplate.opsForValue().get("RT:" + userId);
+        if (currentRefreshToken == null || !currentRefreshToken.equals(graceRefreshToken)) {
+            return null;
+        }
+
         return TokenResponse.builder()
                 .accessToken(parts[0])
-                .refreshToken(parts[1])
+                .refreshToken(graceRefreshToken)
                 .role(Role.valueOf(parts[2]))
                 .build();
     }
