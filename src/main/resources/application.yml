@@ -63,8 +63,8 @@ spring:
 
 feign:
   client:
-    gateway:
-      url: ${GATEWAY_URL:http://localhost:8080}
+    cultivation:
+      url: ${CULTIVATION_SERVER_URL}
 
 
 minio:
